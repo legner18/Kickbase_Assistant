@@ -27,6 +27,9 @@ public class KickbaseApiClient(IHttpClientFactory httpClientFactory)
     public async Task<IReadOnlyList<KickbaseTeamDto>> GetCompetitionTableAsync(string competitionId, CancellationToken ct = default) =>
         (await GetAsync<KickbaseTableResponseDto>($"/v4/competitions/{competitionId}/table", ct)).Teams;
 
+    public async Task<IReadOnlyList<KickbaseNewsItemDto>> GetNewsAsync(string competitionId, CancellationToken ct = default) =>
+        (await GetAsync<KickbaseNewsResponseDto>($"/v4/base/news/{competitionId}", ct)).Items;
+
     /// <summary>Escape hatch for endpoints not yet mapped to a typed DTO - probe first, then add a real method.</summary>
     public Task<JsonElement> GetRawAsync(string path, CancellationToken ct = default) =>
         GetJsonAsync(path, ct);

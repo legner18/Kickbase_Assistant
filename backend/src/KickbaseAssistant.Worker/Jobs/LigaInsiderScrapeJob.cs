@@ -16,6 +16,11 @@ namespace KickbaseAssistant.Worker.Jobs;
 /// LineupPrediction row per player per run (append-only history), regardless of whether a push
 /// was sent - the push itself is deduped by only firing on an actual status transition, so
 /// running this a few times a day doesn't repeat the same alert.
+///
+/// Also feeds Phase 5's Verkaufs-Alarm: a player who *was* predicted Starting and now isn't is
+/// exactly the "Startelf"-signal from the plan, so it's raised here (via SellAlertHelper, same
+/// per-player-per-signal dedup as SellAlertJob) rather than re-deriving it from LineupPrediction
+/// history a second time.
 /// </summary>
 public class LigaInsiderScrapeJob(
     KickbaseApiClient kickbaseApiClient,
@@ -41,6 +46,7 @@ public class LigaInsiderScrapeJob(
         }
 
         var changedPlayers = new List<(Player Player, LineupStatus NewStatus, string? RawLabel)>();
+        var newSellAlerts = new List<(Player Player, string Reason)>();
 
         foreach (var group in playersByTeam)
         {
@@ -108,6 +114,16 @@ public class LigaInsiderScrapeJob(
                 {
                     changedPlayers.Add((player, newStatus, rawLabel));
                 }
+
+                if (previous?.Status == LineupStatus.Starting && statusChanged && newStatus != LineupStatus.Starting)
+                {
+                    var label = string.IsNullOrEmpty(rawLabel) ? StatusLabel(newStatus) : rawLabel;
+                    var reason = $"Laut LigaInsider nicht mehr in der Startelf ({label})";
+                    if (await SellAlertHelper.TryCreateAsync(dbContext, player.Id, SellAlertSignal.LineupDowngrade, reason, ct))
+                    {
+                        newSellAlerts.Add((player, reason));
+                    }
+                }
             }
         }
 
@@ -118,9 +134,29 @@ public class LigaInsiderScrapeJob(
             await PushChangesAsync(changedPlayers, ct);
         }
 
+        if (newSellAlerts.Count > 0)
+        {
+            await PushSellAlertsAsync(newSellAlerts, ct);
+        }
+
         logger.LogInformation(
-            "LigaInsider-Scrape fertig: {TeamCount} Teams, {PlayerCount} Spieler geprüft, {ChangeCount} Statusänderungen.",
-            playersByTeam.Count, squadPlayers.Count, changedPlayers.Count);
+            "LigaInsider-Scrape fertig: {TeamCount} Teams, {PlayerCount} Spieler geprüft, {ChangeCount} Statusänderungen, {SellAlertCount} neue Verkaufs-Alarme.",
+            playersByTeam.Count, squadPlayers.Count, changedPlayers.Count, newSellAlerts.Count);
+    }
+
+    private async Task PushSellAlertsAsync(List<(Player Player, string Reason)> alerts, CancellationToken ct)
+    {
+        var body = new StringBuilder();
+        foreach (var (player, reason) in alerts)
+        {
+            body.AppendLine($"{player.Name}: {reason}");
+        }
+
+        await ntfyPushService.SendAsync(
+            title: "Verkaufs-Alarm 💰",
+            message: body.ToString().TrimEnd(),
+            tags: "money_with_wings,warning",
+            ct: ct);
     }
 
     private async Task PushChangesAsync(

@@ -37,7 +37,15 @@ builder.Services.AddQuartz(q =>
         // Rate-Limit-Angabe, aber "sparsam abfragen" gilt trotzdem): morgens, mittags, abends.
         .WithCronSchedule("0 0 9,13,18 * * ?", x => x.InTimeZone(germanyTimeZone)));
 
-    // Phase 5+: SellAlertJob etc. wird hier mit eigenem Cron-Schedule registriert.
+    var sellAlertJobKey = new JobKey(nameof(SellAlertJob));
+    q.AddJob<SellAlertJob>(opts => opts.WithIdentity(sellAlertJobKey));
+    q.AddTrigger(t => t
+        .ForJob(sellAlertJobKey)
+        .WithIdentity($"{nameof(SellAlertJob)}-trigger")
+        // 15 Min nach dem Marktwert-Snapshot, damit der heutige Wert schon in der DB steht.
+        .WithCronSchedule("0 15 21 * * ?", x => x.InTimeZone(germanyTimeZone)));
+
+    // Phase 6+: Live-Punkte etc. werden hier mit eigenem Cron-Schedule registriert.
 });
 
 builder.Services.AddQuartzHostedService(opts => opts.WaitForJobsToComplete = true);
