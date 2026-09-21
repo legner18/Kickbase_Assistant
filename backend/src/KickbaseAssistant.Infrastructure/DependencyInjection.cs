@@ -2,6 +2,7 @@ using KickbaseAssistant.Infrastructure.Data;
 using KickbaseAssistant.Infrastructure.Kickbase;
 using KickbaseAssistant.Infrastructure.LigaInsider;
 using KickbaseAssistant.Infrastructure.Notifications;
+using KickbaseAssistant.Infrastructure.Realtime;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -69,6 +70,19 @@ public static class DependencyInjection
 
         services.Configure<NtfyOptions>(configuration.GetSection(NtfyOptions.SectionName));
         services.AddHttpClient<NtfyPushService>();
+
+        return services;
+    }
+
+    /// <summary>
+    /// Registers the Worker's SignalR client to the Api's live hub (Phase 6). Only the Worker
+    /// uses this - the Api hosts the hub instead (see KickbaseAssistant.Api/Realtime/LiveHub.cs).
+    /// </summary>
+    public static IServiceCollection AddKickbaseAssistantRealtime(
+        this IServiceCollection services, IConfiguration configuration)
+    {
+        services.Configure<LiveHubOptions>(configuration.GetSection(LiveHubOptions.SectionName));
+        services.AddSingleton<LiveHubClient>();
 
         return services;
     }

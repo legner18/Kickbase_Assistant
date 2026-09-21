@@ -47,8 +47,8 @@ public class KickbaseApiClient(IHttpClientFactory httpClientFactory)
     public Task<JsonElement> GetTeamCenterAsync(string leagueId, string userId, int dayNumber, CancellationToken ct = default) =>
         GetJsonAsync($"/v4/leagues/{leagueId}/users/{userId}/teamcenter?dayNumber={dayNumber}", ct);
 
-    public Task<JsonElement> GetRankingAsync(string leagueId, CancellationToken ct = default) =>
-        GetJsonAsync($"/v4/leagues/{leagueId}/ranking", ct);
+    public Task<KickbaseRankingDto> GetRankingAsync(string leagueId, CancellationToken ct = default) =>
+        GetAsync<KickbaseRankingDto>($"/v4/leagues/{leagueId}/ranking", ct);
 
     private async Task<JsonElement> GetJsonAsync(string requestUri, CancellationToken ct)
     {

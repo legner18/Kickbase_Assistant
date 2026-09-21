@@ -42,6 +42,7 @@ services:
       Kickbase__Email: ${KICKBASE_EMAIL:?KICKBASE_EMAIL must be set in .env}
       Kickbase__Password: ${KICKBASE_PASSWORD:?KICKBASE_PASSWORD must be set in .env}
       Ntfy__Topic: ${NTFY_TOPIC:?NTFY_TOPIC must be set in .env}
+      LiveHub__Url: "http://api:8080/hubs/live"
       ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
 
 volumes:

@@ -7,6 +7,7 @@ var builder = Host.CreateApplicationBuilder(args);
 builder.Services.AddKickbaseAssistantDatabase(builder.Configuration);
 builder.Services.AddKickbaseAssistantKickbaseClient(builder.Configuration);
 builder.Services.AddKickbaseAssistantLigaInsider(builder.Configuration);
+builder.Services.AddKickbaseAssistantRealtime(builder.Configuration);
 
 builder.Services.AddQuartz(q =>
 {
@@ -45,7 +46,17 @@ builder.Services.AddQuartz(q =>
         // 15 Min nach dem Marktwert-Snapshot, damit der heutige Wert schon in der DB steht.
         .WithCronSchedule("0 15 21 * * ?", x => x.InTimeZone(germanyTimeZone)));
 
-    // Phase 6+: Live-Punkte etc. werden hier mit eigenem Cron-Schedule registriert.
+    var liveScoreJobKey = new JobKey(nameof(LiveScoreJob));
+    q.AddJob<LiveScoreJob>(opts => opts.WithIdentity(liveScoreJobKey));
+    q.AddTrigger(t => t
+        .ForJob(liveScoreJobKey)
+        .WithIdentity($"{nameof(LiveScoreJob)}-trigger")
+        // Feuert immer alle 90s, der Job selbst prüft intern das Zeitfenster/"il"-Flag und tut
+        // außerhalb davon nichts (siehe LiveScoreJob-Doku).
+        .WithSimpleSchedule(s => s.WithIntervalInSeconds(90).RepeatForever())
+        .StartNow());
+
+    // Phase 7+: Transfermarkt-Scanner etc. wird hier mit eigenem Cron-Schedule registriert.
 });
 
 builder.Services.AddQuartzHostedService(opts => opts.WaitForJobsToComplete = true);
