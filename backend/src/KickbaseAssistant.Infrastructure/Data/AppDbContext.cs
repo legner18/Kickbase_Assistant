@@ -12,6 +12,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<SellAlert> SellAlerts => Set<SellAlert>();
     public DbSet<MarketScanResult> MarketScanResults => Set<MarketScanResult>();
     public DbSet<League> Leagues => Set<League>();
+    public DbSet<LeagueTransfer> LeagueTransfers => Set<LeagueTransfer>();
+    public DbSet<LeagueManagerStat> LeagueManagerStats => Set<LeagueManagerStat>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -83,6 +85,29 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             l.Property(x => x.Name).IsRequired().HasMaxLength(200);
             l.Property(x => x.CompetitionId).IsRequired().HasMaxLength(50);
             l.Property(x => x.OwnUserId).IsRequired().HasMaxLength(50);
+        });
+
+        builder.Entity<LeagueTransfer>(t =>
+        {
+            t.Property(x => x.LeagueId).IsRequired().HasMaxLength(50);
+            t.Property(x => x.ManagerId).IsRequired().HasMaxLength(50);
+            t.Property(x => x.ManagerName).IsRequired().HasMaxLength(200);
+            t.Property(x => x.PlayerId).IsRequired().HasMaxLength(50);
+            t.Property(x => x.PlayerName).IsRequired().HasMaxLength(200);
+            t.Property(x => x.OtherManagerName).HasMaxLength(200);
+            t.Property(x => x.Type).HasConversion<string>().HasMaxLength(10);
+
+            t.HasIndex(x => new { x.ManagerId, x.PlayerId, x.Type, x.OccurredAt }).IsUnique();
+            t.HasIndex(x => x.LeagueId);
+        });
+
+        builder.Entity<LeagueManagerStat>(s =>
+        {
+            s.Property(x => x.LeagueId).IsRequired().HasMaxLength(50);
+            s.Property(x => x.ManagerId).IsRequired().HasMaxLength(50);
+            s.Property(x => x.ManagerName).IsRequired().HasMaxLength(200);
+
+            s.HasIndex(x => new { x.LeagueId, x.ManagerId }).IsUnique();
         });
     }
 }

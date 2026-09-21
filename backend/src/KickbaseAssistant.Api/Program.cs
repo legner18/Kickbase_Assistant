@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using KickbaseAssistant.Api.Realtime;
 using KickbaseAssistant.Infrastructure;
 
@@ -5,7 +6,8 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddKickbaseAssistantDatabase(builder.Configuration);
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(o => o.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddSignalR();

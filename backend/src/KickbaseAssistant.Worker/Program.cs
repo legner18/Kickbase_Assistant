@@ -65,7 +65,16 @@ builder.Services.AddQuartz(q =>
         // aber nicht sekündlich wie Live-Punkte.
         .WithCronSchedule("0 0 8-22/2 * * ?", x => x.InTimeZone(germanyTimeZone)));
 
-    // Phase 8+: Liga-Analyse etc. wird hier mit eigenem Cron-Schedule registriert.
+    var leagueAnalysisJobKey = new JobKey(nameof(LeagueAnalysisJob));
+    q.AddJob<LeagueAnalysisJob>(opts => opts.WithIdentity(leagueAnalysisJobKey));
+    q.AddTrigger(t => t
+        .ForJob(leagueAnalysisJobKey)
+        .WithIdentity($"{nameof(LeagueAnalysisJob)}-trigger")
+        // Einmal täglich - Budget/Gebotsverhalten sind langsam wandernde, strategische Infos,
+        // kein Zeitdruck wie bei Live-Punkten. Nach den anderen Abend-Jobs.
+        .WithCronSchedule("0 15 22 * * ?", x => x.InTimeZone(germanyTimeZone)));
+
+    // Phase 9+: Punkteprognose + Optimierer wird hier mit eigenem Cron-Schedule registriert.
 });
 
 builder.Services.AddQuartzHostedService(opts => opts.WaitForJobsToComplete = true);

@@ -55,6 +55,14 @@ public class KickbaseApiClient(IHttpClientFactory httpClientFactory)
     public Task<KickbaseRankingDto> GetRankingAsync(string leagueId, CancellationToken ct = default) =>
         GetAsync<KickbaseRankingDto>($"/v4/leagues/{leagueId}/ranking", ct);
 
+    /// <summary>Only works for the logged-in user - see KickbaseBudgetDto.</summary>
+    public Task<KickbaseBudgetDto> GetMyBudgetAsync(string leagueId, CancellationToken ct = default) =>
+        GetAsync<KickbaseBudgetDto>($"/v4/leagues/{leagueId}/me/budget", ct);
+
+    public Task<KickbaseManagerTransfersResponseDto> GetManagerTransfersAsync(
+        string leagueId, string managerId, CancellationToken ct = default) =>
+        GetAsync<KickbaseManagerTransfersResponseDto>($"/v4/leagues/{leagueId}/managers/{managerId}/transfer", ct);
+
     private async Task<JsonElement> GetJsonAsync(string requestUri, CancellationToken ct)
     {
         using var client = CreateClient();
