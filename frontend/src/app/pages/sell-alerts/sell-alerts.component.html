@@ -1,0 +1,22 @@
+<h1>Verkaufs-Alarm</h1>
+<p class="hint">Offene Alarme über alle Ligen. Erledigt = wird ausgeblendet, taucht erst bei einem neuen Signal wieder auf.</p>
+
+@if (loading()) {
+  <p class="empty-state">Lädt…</p>
+} @else if (alerts().length === 0) {
+  <p class="empty-state">Keine offenen Verkaufs-Alarme. 🎉</p>
+} @else {
+  @for (alert of alerts(); track alert.id) {
+    <div class="card alert-card">
+      <div class="alert-main">
+        <div class="alert-title">
+          <strong>{{ alert.playerName }}</strong>
+          <span class="badge badge-warning">{{ signalLabels[alert.signal] ?? alert.signal }}</span>
+        </div>
+        <div class="alert-reason">{{ alert.reason }}</div>
+        <div class="alert-date">{{ alert.createdAt | date: 'dd.MM.yyyy HH:mm' }}</div>
+      </div>
+      <button (click)="acknowledge(alert.id)">Erledigt</button>
+    </div>
+  }
+}

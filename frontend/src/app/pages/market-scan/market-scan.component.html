@@ -1,0 +1,44 @@
+<h1>Transfermarkt-Scanner</h1>
+<p class="hint">
+  Score = Ø aus Momentum (Marktwert-Trend), Aufstellungs-Wahrscheinlichkeit und Restprogramm.
+  Höher = lohnenswerter.
+</p>
+
+@if (loading()) {
+  <p class="empty-state">Lädt…</p>
+} @else if (entries().length === 0) {
+  <p class="empty-state">Aktuell keine Spieler auf dem Markt in dieser Liga.</p>
+} @else {
+  <div class="card">
+    <table>
+      <thead>
+        <tr>
+          <th>Spieler</th>
+          <th>Preis</th>
+          <th>Gebote</th>
+          <th>Momentum</th>
+          <th>Aufstellung</th>
+          <th>Restprogramm</th>
+          <th>Score</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (entry of entries(); track entry.playerId) {
+          <tr>
+            <td>{{ entry.playerName }}</td>
+            <td>{{ entry.price | number: '1.0-0' : 'de' }} €</td>
+            <td>{{ entry.offerCount }}</td>
+            <td>{{ entry.momentumScore | number: '1.0-0' }}</td>
+            <td>{{ entry.lineupScore | number: '1.0-0' }}</td>
+            <td>{{ entry.fixtureScore | number: '1.0-0' }}</td>
+            <td>
+              <span class="badge" [class]="scoreClass(entry.overallScore)">
+                {{ entry.overallScore | number: '1.0-0' }}
+              </span>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+}

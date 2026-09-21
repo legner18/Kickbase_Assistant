@@ -1,0 +1,27 @@
+<h1>Dashboard</h1>
+
+<div class="card-grid">
+  <div class="card">
+    <div class="stat-label">Kader (alle Ligen)</div>
+    <div class="stat">{{ players().length }}</div>
+  </div>
+  <div class="card">
+    <div class="stat-label">Offene Verkaufs-Alarme</div>
+    <div class="stat" [class.negative]="openAlerts().length > 0">{{ openAlerts().length }}</div>
+  </div>
+  <div class="card">
+    <div class="stat-label">Aktive Ligen</div>
+    <div class="stat">{{ leagueContext.leagues().length }}</div>
+  </div>
+</div>
+
+<div class="card">
+  <h2>Schnellzugriff</h2>
+  <ul class="quick-links">
+    <li><a routerLink="/kader">Mein Kader ansehen</a></li>
+    <li><a routerLink="/verkaufs-alarm">Verkaufs-Alarme prüfen</a></li>
+    <li><a routerLink="/transfermarkt">Transfermarkt-Scanner</a></li>
+    <li><a routerLink="/liga-analyse">Liga-Analyse &amp; Gebotsverhalten</a></li>
+    <li><a routerLink="/live">Live-Punkte</a></li>
+  </ul>
+</div>

@@ -1,0 +1,26 @@
+<div class="shell">
+  <header class="topbar">
+    <div class="brand">Kickbase Assistant</div>
+
+    <nav class="nav">
+      <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Dashboard</a>
+      <a routerLink="/kader" routerLinkActive="active">Kader</a>
+      <a routerLink="/verkaufs-alarm" routerLinkActive="active">Verkaufs-Alarm</a>
+      <a routerLink="/transfermarkt" routerLinkActive="active">Transfermarkt</a>
+      <a routerLink="/liga-analyse" routerLinkActive="active">Liga-Analyse</a>
+      <a routerLink="/live" routerLinkActive="active">Live</a>
+    </nav>
+
+    @if (leagueContext.leagues().length > 0) {
+      <select class="league-select" [value]="leagueContext.selectedLeagueId()" (change)="onLeagueChange($event)">
+        @for (league of leagueContext.leagues(); track league.id) {
+          <option [value]="league.id">{{ league.name }}</option>
+        }
+      </select>
+    }
+  </header>
+
+  <main class="content">
+    <router-outlet />
+  </main>
+</div>

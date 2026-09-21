@@ -1,0 +1,78 @@
+<h1>Liga-Analyse</h1>
+
+<h2>Geschätztes Budget &amp; Gebotsverhalten</h2>
+<p class="hint">
+  Budget ist eine Schätzung (Kickbase gibt nur dein eigenes echtes Budget heraus). Überzahlung
+  nur für Käufe der letzten 30 Tage berechnet.
+</p>
+
+@if (managerStats().length === 0) {
+  <p class="empty-state">Noch keine Daten.</p>
+} @else {
+  <div class="card">
+    <table>
+      <thead>
+        <tr>
+          <th>Manager</th>
+          <th>Geschätztes Budget</th>
+          <th>Ø Überzahlung</th>
+          <th>Transfers</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (stat of managerStats(); track stat.managerId) {
+          <tr>
+            <td>{{ stat.managerName }}</td>
+            <td>{{ stat.estimatedBudget | number: '1.0-0' : 'de' }} €</td>
+            <td>
+              @if (stat.averageOverpayPercent !== null) {
+                <span [class]="stat.averageOverpayPercent > 0 ? 'negative' : 'positive'">
+                  {{ stat.averageOverpayPercent >= 0 ? '+' : '' }}{{ stat.averageOverpayPercent | number: '1.0-1' }}%
+                </span>
+              } @else {
+                <span class="empty-state">–</span>
+              }
+            </td>
+            <td>{{ stat.transferCount }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+}
+
+<h2>Letzte Transfers</h2>
+@if (loading()) {
+  <p class="empty-state">Lädt…</p>
+} @else if (transfers().length === 0) {
+  <p class="empty-state">Noch keine Transfers erfasst.</p>
+} @else {
+  <div class="card">
+    <table>
+      <thead>
+        <tr>
+          <th>Datum</th>
+          <th>Manager</th>
+          <th>Typ</th>
+          <th>Spieler</th>
+          <th>Preis</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (transfer of transfers(); track transfer.id) {
+          <tr>
+            <td>{{ transfer.occurredAt | date: 'dd.MM.yyyy' }}</td>
+            <td>{{ transfer.managerName }}</td>
+            <td>
+              <span class="badge" [class]="transfer.type === 'Buy' ? 'badge-ok' : 'badge-neutral'">
+                {{ transfer.type === 'Buy' ? 'Kauf' : 'Verkauf' }}
+              </span>
+            </td>
+            <td>{{ transfer.playerName }}</td>
+            <td>{{ transfer.price | number: '1.0-0' : 'de' }} €</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+}

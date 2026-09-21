@@ -1,0 +1,42 @@
+<h1>Live-Punkte</h1>
+
+<div class="card status-card">
+  <span>Verbindung:</span>
+  <span
+    class="badge"
+    [class]="liveHub.connectionState() === 'connected' ? 'badge-ok' : 'badge-neutral'"
+  >
+    {{ liveHub.connectionState() === 'connected' ? 'verbunden' : liveHub.connectionState() === 'connecting' ? 'verbinde…' : 'getrennt' }}
+  </span>
+</div>
+
+@if (standingsForSelectedLeague(); as update) {
+  <div class="card">
+    <h2>{{ update.leagueName }} – Spieltag {{ update.matchday }}</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Manager</th>
+          <th>Spieltag-Punkte</th>
+          <th>Saison-Punkte</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (standing of update.standings; track standing.userId) {
+          <tr>
+            <td>{{ standing.matchdayRank }}</td>
+            <td>{{ standing.name }}</td>
+            <td>{{ standing.matchdayPoints | number: '1.0-0' }}</td>
+            <td>{{ standing.seasonPoints | number: '1.0-0' }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+} @else {
+  <p class="empty-state">
+    Kein Spiel gerade live (oder außerhalb des Polling-Fensters Fr/Sa/So). Sobald der Worker ein
+    Live-Update für diese Liga sendet, erscheint es hier automatisch.
+  </p>
+}

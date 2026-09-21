@@ -1,0 +1,50 @@
+<h1>Mein Kader</h1>
+<p class="hint">
+  Zeigt alle Spieler, die aktuell in mindestens einem deiner Kader stehen (ligenübergreifend
+  zusammengefasst).
+</p>
+
+@if (loading()) {
+  <p class="empty-state">Lädt…</p>
+} @else if (players().length === 0) {
+  <p class="empty-state">Noch keine Kaderdaten vorhanden.</p>
+} @else {
+  <div class="card">
+    <table>
+      <thead>
+        <tr>
+          <th>Spieler</th>
+          <th>Pos</th>
+          <th>Team</th>
+          <th>Marktwert</th>
+          <th>Tendenz</th>
+          <th>Aufstellung</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (player of players(); track player.id) {
+          <tr>
+            <td>{{ player.name }}</td>
+            <td>{{ positionLabels[player.position] ?? '–' }}</td>
+            <td>{{ player.teamName ?? player.teamId }}</td>
+            <td>{{ player.marketValue | number: '1.0-0' : 'de' }} €</td>
+            <td>
+              @if (player.latestMarketValueChange !== null) {
+                <span [class]="player.latestMarketValueChange >= 0 ? 'positive' : 'negative'">
+                  {{ player.latestMarketValueChange >= 0 ? '+' : '' }}{{ player.latestMarketValueChange | number: '1.0-0' : 'de' }} €
+                </span>
+              } @else {
+                <span class="empty-state">–</span>
+              }
+            </td>
+            <td>
+              <span class="badge" [class]="lineupBadgeClass(player.latestLineupStatus)">
+                {{ player.latestLineupStatus ? (lineupLabels[player.latestLineupStatus] ?? player.latestLineupStatus) : 'Unbekannt' }}
+              </span>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+}

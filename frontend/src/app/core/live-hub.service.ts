@@ -1,0 +1,46 @@
+import { Injectable, signal } from '@angular/core';
+import * as signalR from '@microsoft/signalr';
+import { API_BASE_URL } from './api-config';
+import { LiveRankingUpdate } from './models';
+
+export type LiveConnectionState = 'disconnected' | 'connecting' | 'connected';
+
+@Injectable({ providedIn: 'root' })
+export class LiveHubService {
+  private connection: signalR.HubConnection | null = null;
+
+  readonly lastUpdate = signal<LiveRankingUpdate | null>(null);
+  readonly connectionState = signal<LiveConnectionState>('disconnected');
+
+  connect(): void {
+    if (this.connection) {
+      return;
+    }
+
+    this.connectionState.set('connecting');
+    const connection = new signalR.HubConnectionBuilder()
+      .withUrl(`${API_BASE_URL}/hubs/live`)
+      .withAutomaticReconnect()
+      .build();
+
+    connection.on('RankingUpdated', (_leagueId: string, payload: LiveRankingUpdate) => {
+      this.lastUpdate.set(payload);
+    });
+    connection.onreconnected(() => this.connectionState.set('connected'));
+    connection.onreconnecting(() => this.connectionState.set('connecting'));
+    connection.onclose(() => this.connectionState.set('disconnected'));
+
+    connection
+      .start()
+      .then(() => this.connectionState.set('connected'))
+      .catch(() => this.connectionState.set('disconnected'));
+
+    this.connection = connection;
+  }
+
+  disconnect(): void {
+    this.connection?.stop();
+    this.connection = null;
+    this.connectionState.set('disconnected');
+  }
+}
