@@ -1,0 +1,48 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: kickbase_assistant
+      POSTGRES_USER: ${DB_USER:-kickbase}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD must be set in .env}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-kickbase}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: ./backend
+      dockerfile: src/KickbaseAssistant.Api/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      ConnectionStrings__Default: "Host=postgres;Port=5432;Database=kickbase_assistant;Username=${DB_USER:-kickbase};Password=${DB_PASSWORD}"
+      Cors__AllowedOrigins__0: ${FRONTEND_ORIGIN:-http://localhost:4200}
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
+    ports:
+      - "5080:8080"
+
+  worker:
+    build:
+      context: ./backend
+      dockerfile: src/KickbaseAssistant.Worker/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      ConnectionStrings__Default: "Host=postgres;Port=5432;Database=kickbase_assistant;Username=${DB_USER:-kickbase};Password=${DB_PASSWORD}"
+      Kickbase__Email: ${KICKBASE_EMAIL:?KICKBASE_EMAIL must be set in .env}
+      Kickbase__Password: ${KICKBASE_PASSWORD:?KICKBASE_PASSWORD must be set in .env}
+      Ntfy__Topic: ${NTFY_TOPIC:?NTFY_TOPIC must be set in .env}
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
+
+volumes:
+  postgres-data:

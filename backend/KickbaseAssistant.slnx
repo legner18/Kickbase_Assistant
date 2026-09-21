@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/KickbaseAssistant.Api/KickbaseAssistant.Api.csproj" />
+    <Project Path="src/KickbaseAssistant.Domain/KickbaseAssistant.Domain.csproj" />
+    <Project Path="src/KickbaseAssistant.Infrastructure/KickbaseAssistant.Infrastructure.csproj" />
+    <Project Path="src/KickbaseAssistant.Worker/KickbaseAssistant.Worker.csproj" />
+  </Folder>
+</Solution>
