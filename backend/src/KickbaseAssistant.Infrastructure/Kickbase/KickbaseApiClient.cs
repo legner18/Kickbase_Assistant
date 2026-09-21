@@ -34,12 +34,17 @@ public class KickbaseApiClient(IHttpClientFactory httpClientFactory)
     public Task<JsonElement> GetRawAsync(string path, CancellationToken ct = default) =>
         GetJsonAsync(path, ct);
 
-    public Task<JsonElement> GetMarketAsync(string leagueId, CancellationToken ct = default) =>
-        GetJsonAsync($"/v4/leagues/{leagueId}/market", ct);
+    public async Task<IReadOnlyList<KickbaseMarketPlayerDto>> GetMarketAsync(string leagueId, CancellationToken ct = default) =>
+        (await GetAsync<KickbaseMarketResponseDto>($"/v4/leagues/{leagueId}/market", ct)).Players;
 
-    public Task<JsonElement> GetMarketValueHistoryAsync(
-        string competitionId, string playerId, string timeframe, CancellationToken ct = default) =>
-        GetJsonAsync($"/v4/competitions/{competitionId}/players/{playerId}/marketvalue/{timeframe}", ct);
+    /// <summary>timeframe must be 92 (3 months) or 365 (1 year) - see KickbaseMarketValueHistoryDto.</summary>
+    public async Task<IReadOnlyList<KickbaseMarketValueHistoryPointDto>> GetMarketValueHistoryAsync(
+        string competitionId, string playerId, int timeframe, CancellationToken ct = default) =>
+        (await GetAsync<KickbaseMarketValueHistoryResponseDto>(
+            $"/v4/competitions/{competitionId}/players/{playerId}/marketvalue/{timeframe}", ct)).Points;
+
+    public async Task<IReadOnlyList<KickbaseMatchdayDto>> GetMatchdaysAsync(string competitionId, CancellationToken ct = default) =>
+        (await GetAsync<KickbaseMatchdaysResponseDto>($"/v4/competitions/{competitionId}/matchdays", ct)).Matchdays;
 
     public Task<JsonElement> GetActivitiesFeedAsync(string leagueId, CancellationToken ct = default) =>
         GetJsonAsync($"/v4/leagues/{leagueId}/activitiesFeed", ct);

@@ -86,6 +86,56 @@ namespace KickbaseAssistant.Infrastructure.Migrations
                     b.ToTable("LineupPredictions");
                 });
 
+            modelBuilder.Entity("KickbaseAssistant.Domain.Players.MarketScanResult", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTimeOffset>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<double>("FixtureScore")
+                        .HasColumnType("double precision");
+
+                    b.Property<string>("LeagueId")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<double>("LineupScore")
+                        .HasColumnType("double precision");
+
+                    b.Property<double>("MomentumScore")
+                        .HasColumnType("double precision");
+
+                    b.Property<int>("OfferCount")
+                        .HasColumnType("integer");
+
+                    b.Property<double>("OverallScore")
+                        .HasColumnType("double precision");
+
+                    b.Property<string>("PlayerId")
+                        .IsRequired()
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<int>("Price")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTimeOffset>("ScannedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PlayerId");
+
+                    b.HasIndex("LeagueId", "OverallScore");
+
+                    b.ToTable("MarketScanResults");
+                });
+
             modelBuilder.Entity("KickbaseAssistant.Domain.Players.MarketValueSnapshot", b =>
                 {
                     b.Property<long>("Id")
@@ -210,6 +260,17 @@ namespace KickbaseAssistant.Infrastructure.Migrations
                     b.Navigation("Player");
                 });
 
+            modelBuilder.Entity("KickbaseAssistant.Domain.Players.MarketScanResult", b =>
+                {
+                    b.HasOne("KickbaseAssistant.Domain.Players.Player", "Player")
+                        .WithMany("MarketScanResults")
+                        .HasForeignKey("PlayerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Player");
+                });
+
             modelBuilder.Entity("KickbaseAssistant.Domain.Players.MarketValueSnapshot", b =>
                 {
                     b.HasOne("KickbaseAssistant.Domain.Players.Player", "Player")
@@ -235,6 +296,8 @@ namespace KickbaseAssistant.Infrastructure.Migrations
             modelBuilder.Entity("KickbaseAssistant.Domain.Players.Player", b =>
                 {
                     b.Navigation("LineupPredictions");
+
+                    b.Navigation("MarketScanResults");
 
                     b.Navigation("MarketValueSnapshots");
 

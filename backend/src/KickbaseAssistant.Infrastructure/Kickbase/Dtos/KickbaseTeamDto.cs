@@ -14,6 +14,10 @@ public class KickbaseTeamDto
 
     [JsonPropertyName("tn")]
     public required string Name { get; set; }
+
+    /// <summary>Current league placement (1 = top of the table = toughest opponent).</summary>
+    [JsonPropertyName("cpl")]
+    public int CurrentPlacement { get; set; }
 }
 
 public class KickbaseTableResponseDto

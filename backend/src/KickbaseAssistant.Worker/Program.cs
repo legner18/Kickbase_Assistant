@@ -56,7 +56,16 @@ builder.Services.AddQuartz(q =>
         .WithSimpleSchedule(s => s.WithIntervalInSeconds(90).RepeatForever())
         .StartNow());
 
-    // Phase 7+: Transfermarkt-Scanner etc. wird hier mit eigenem Cron-Schedule registriert.
+    var transferMarketScanJobKey = new JobKey(nameof(TransferMarketScanJob));
+    q.AddJob<TransferMarketScanJob>(opts => opts.WithIdentity(transferMarketScanJobKey));
+    q.AddTrigger(t => t
+        .ForJob(transferMarketScanJobKey)
+        .WithIdentity($"{nameof(TransferMarketScanJob)}-trigger")
+        // Alle 2h während wacher Stunden - Marktlisten ändern sich, wenn Leute kaufen/verkaufen,
+        // aber nicht sekündlich wie Live-Punkte.
+        .WithCronSchedule("0 0 8-22/2 * * ?", x => x.InTimeZone(germanyTimeZone)));
+
+    // Phase 8+: Liga-Analyse etc. wird hier mit eigenem Cron-Schedule registriert.
 });
 
 builder.Services.AddQuartzHostedService(opts => opts.WaitForJobsToComplete = true);

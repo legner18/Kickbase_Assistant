@@ -16,4 +16,5 @@ public class Player
     public ICollection<MarketValueSnapshot> MarketValueSnapshots { get; set; } = [];
     public ICollection<LineupPrediction> LineupPredictions { get; set; } = [];
     public ICollection<SellAlert> SellAlerts { get; set; } = [];
+    public ICollection<MarketScanResult> MarketScanResults { get; set; } = [];
 }

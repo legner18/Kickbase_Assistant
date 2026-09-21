@@ -10,6 +10,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<MarketValueSnapshot> MarketValueSnapshots => Set<MarketValueSnapshot>();
     public DbSet<LineupPrediction> LineupPredictions => Set<LineupPrediction>();
     public DbSet<SellAlert> SellAlerts => Set<SellAlert>();
+    public DbSet<MarketScanResult> MarketScanResults => Set<MarketScanResult>();
     public DbSet<League> Leagues => Set<League>();
 
     protected override void OnModelCreating(ModelBuilder builder)
@@ -40,6 +41,11 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
                 .WithOne(a => a.Player)
                 .HasForeignKey(a => a.PlayerId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            p.HasMany(x => x.MarketScanResults)
+                .WithOne(r => r.Player)
+                .HasForeignKey(r => r.PlayerId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         builder.Entity<MarketValueSnapshot>(s =>
@@ -62,6 +68,13 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
             a.HasIndex(x => new { x.PlayerId, x.Signal, x.CreatedAt });
             a.HasIndex(x => x.Acknowledged);
+        });
+
+        builder.Entity<MarketScanResult>(r =>
+        {
+            r.Property(x => x.LeagueId).IsRequired().HasMaxLength(50);
+
+            r.HasIndex(x => new { x.LeagueId, x.OverallScore });
         });
 
         builder.Entity<League>(l =>
