@@ -37,6 +37,7 @@
           <th class="sortable" (click)="setSort('change')">Tendenz</th>
           <th class="sortable" (click)="setSort('totalPoints')">Punkte</th>
           <th>Aufstellung</th>
+          <th class="sortable" (click)="setSort('sellScore')">Verkaufs-Score</th>
         </tr>
       </thead>
       <tbody>
@@ -61,6 +62,20 @@
               <span class="badge" [class]="lineupBadgeClass(player.latestLineupStatus)">
                 {{ player.latestLineupStatus ? (lineupLabels[player.latestLineupStatus] ?? player.latestLineupStatus) : 'Unbekannt' }}
               </span>
+            </td>
+            <td>
+              @if (player.sellScore !== null) {
+                <span
+                  class="badge"
+                  [style.background]="scoreColor(player.sellScore) + '26'"
+                  [style.color]="scoreColor(player.sellScore)"
+                  title="Momentum {{ player.sellMomentumScore | number: '1.0-0' }} · Aufstellung {{ player.sellLineupScore | number: '1.0-0' }} · Restprogramm {{ player.sellFixtureScore | number: '1.0-0' }}"
+                >
+                  {{ player.sellScore | number: '1.0-0' }}{{ player.sellScore < 40 ? ' · Verkauf erwägen' : '' }}
+                </span>
+              } @else {
+                <span class="empty-state">–</span>
+              }
             </td>
           </tr>
         }

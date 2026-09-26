@@ -18,4 +18,5 @@ public class Player
     public ICollection<LineupPrediction> LineupPredictions { get; set; } = [];
     public ICollection<SellAlert> SellAlerts { get; set; } = [];
     public ICollection<MarketScanResult> MarketScanResults { get; set; } = [];
+    public ICollection<SquadPlayerScore> SquadPlayerScores { get; set; } = [];
 }

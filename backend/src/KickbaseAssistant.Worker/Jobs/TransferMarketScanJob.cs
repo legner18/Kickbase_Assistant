@@ -21,6 +21,12 @@ namespace KickbaseAssistant.Worker.Jobs;
 ///
 /// This is a full-refresh snapshot job, not a history log: MarketScanResult rows for a league are
 /// cleared and rewritten every run, since "what's on the market right now" is what matters.
+///
+/// The same three signals are also applied to the user's own squad in each league (SquadPlayerScore,
+/// same full-refresh semantics) - a "sell recommendation" view rather than a "buy recommendation"
+/// one: a LOW score on an owned player means bad momentum/lineup/fixtures, worth reviewing for a
+/// sale. Reuses the per-league table/matchday/ranking data already fetched for market scoring, no
+/// extra Kickbase calls.
 /// </summary>
 public class TransferMarketScanJob(
     KickbaseApiClient kickbaseApiClient,
@@ -41,10 +47,14 @@ public class TransferMarketScanJob(
         var matchdaysByCompetition = new Dictionary<string, IReadOnlyList<KickbaseMatchdayDto>>();
         var totalScanned = 0;
 
+        var totalSquadScored = 0;
+
         foreach (var league in activeLeagues)
         {
             var oldResults = await dbContext.MarketScanResults.Where(r => r.LeagueId == league.Id).ToListAsync(ct);
             dbContext.MarketScanResults.RemoveRange(oldResults);
+            var oldSquadScores = await dbContext.SquadPlayerScores.Where(r => r.LeagueId == league.Id).ToListAsync(ct);
+            dbContext.SquadPlayerScores.RemoveRange(oldSquadScores);
 
             IReadOnlyList<KickbaseMarketPlayerDto> marketPlayers;
             try
@@ -54,11 +64,6 @@ public class TransferMarketScanJob(
             catch (Exception ex)
             {
                 logger.LogWarning(ex, "Transfermarkt-Scan: Markt für Liga {LeagueName} konnte nicht geladen werden.", league.Name);
-                continue;
-            }
-
-            if (marketPlayers.Count == 0)
-            {
                 continue;
             }
 
@@ -117,13 +122,39 @@ public class TransferMarketScanJob(
                 });
                 totalScanned++;
             }
+
+            var ownSquad = await dbContext.SquadMemberships
+                .Where(m => m.LeagueId == league.Id && m.ManagerId == league.OwnUserId)
+                .Select(m => m.Player!)
+                .ToListAsync(ct);
+
+            foreach (var player in ownSquad)
+            {
+                var momentum = await ComputeMomentumAsync(league.CompetitionId, player.Id, ct);
+                var lineupScore = await ComputeLineupScoreAsync(player.Id, ct);
+                var fixtureScore = ComputeFixtureScore(player.TeamId, matchdays, currentMatchday, placements);
+
+                dbContext.SquadPlayerScores.Add(new SquadPlayerScore
+                {
+                    LeagueId = league.Id,
+                    PlayerId = player.Id,
+                    MomentumScore = momentum.Score,
+                    LineupScore = lineupScore,
+                    FixtureScore = fixtureScore,
+                    OverallScore = (momentum.Score + lineupScore + fixtureScore) / 3.0,
+                    MarketValueChangeAbs = momentum.AbsChange,
+                    MarketValueChangePercent = momentum.PercentChange,
+                    ScannedAt = DateTimeOffset.UtcNow,
+                });
+                totalSquadScored++;
+            }
         }
 
         await dbContext.SaveChangesAsync(ct);
 
         logger.LogInformation(
-            "Transfermarkt-Scan fertig: {LeagueCount} Ligen geprüft, {PlayerCount} Marktspieler bewertet.",
-            activeLeagues.Count, totalScanned);
+            "Transfermarkt-Scan fertig: {LeagueCount} Ligen geprüft, {PlayerCount} Marktspieler bewertet, {SquadCount} eigene Kaderspieler bewertet.",
+            activeLeagues.Count, totalScanned, totalSquadScored);
     }
 
     private async Task UpsertPlayerAsync(

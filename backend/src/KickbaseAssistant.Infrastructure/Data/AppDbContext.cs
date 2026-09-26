@@ -11,6 +11,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<LineupPrediction> LineupPredictions => Set<LineupPrediction>();
     public DbSet<SellAlert> SellAlerts => Set<SellAlert>();
     public DbSet<MarketScanResult> MarketScanResults => Set<MarketScanResult>();
+    public DbSet<SquadPlayerScore> SquadPlayerScores => Set<SquadPlayerScore>();
     public DbSet<League> Leagues => Set<League>();
     public DbSet<LeagueTransfer> LeagueTransfers => Set<LeagueTransfer>();
     public DbSet<LeagueManagerStat> LeagueManagerStats => Set<LeagueManagerStat>();
@@ -49,6 +50,11 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
                 .WithOne(r => r.Player)
                 .HasForeignKey(r => r.PlayerId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            p.HasMany(x => x.SquadPlayerScores)
+                .WithOne(r => r.Player)
+                .HasForeignKey(r => r.PlayerId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         builder.Entity<MarketValueSnapshot>(s =>
@@ -74,6 +80,13 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         });
 
         builder.Entity<MarketScanResult>(r =>
+        {
+            r.Property(x => x.LeagueId).IsRequired().HasMaxLength(50);
+
+            r.HasIndex(x => new { x.LeagueId, x.OverallScore });
+        });
+
+        builder.Entity<SquadPlayerScore>(r =>
         {
             r.Property(x => x.LeagueId).IsRequired().HasMaxLength(50);
 

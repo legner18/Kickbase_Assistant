@@ -14,6 +14,7 @@ import {
   PlayerDetail,
   PlayerSearchResult,
   SellAlert,
+  ValueRankingEntry,
 } from './models';
 
 @Injectable({ providedIn: 'root' })
@@ -44,6 +45,11 @@ export class ApiService {
 
   getPlayerComparables(playerId: string): Observable<PlayerComparables> {
     return this.http.get<PlayerComparables>(`${this.base}/api/players/${playerId}/comparables`);
+  }
+
+  getValueRanking(position?: number): Observable<ValueRankingEntry[]> {
+    const query = position ? `?position=${position}` : '';
+    return this.http.get<ValueRankingEntry[]>(`${this.base}/api/players/value-ranking${query}`);
   }
 
   getMarketValueHistory(playerId: string): Observable<MarketValueHistoryPoint[]> {

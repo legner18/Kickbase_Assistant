@@ -47,6 +47,22 @@ public class PlayersController(AppDbContext dbContext) : ControllerBase
                     .OrderByDescending(s => s.Date)
                     .Select(s => (int?)s.MarketValueChange)
                     .FirstOrDefault(),
+                sellScore = dbContext.SquadPlayerScores
+                    .Where(r => r.LeagueId == leagueId && r.PlayerId == p.Id)
+                    .Select(r => (double?)r.OverallScore)
+                    .FirstOrDefault(),
+                sellMomentumScore = dbContext.SquadPlayerScores
+                    .Where(r => r.LeagueId == leagueId && r.PlayerId == p.Id)
+                    .Select(r => (double?)r.MomentumScore)
+                    .FirstOrDefault(),
+                sellLineupScore = dbContext.SquadPlayerScores
+                    .Where(r => r.LeagueId == leagueId && r.PlayerId == p.Id)
+                    .Select(r => (double?)r.LineupScore)
+                    .FirstOrDefault(),
+                sellFixtureScore = dbContext.SquadPlayerScores
+                    .Where(r => r.LeagueId == leagueId && r.PlayerId == p.Id)
+                    .Select(r => (double?)r.FixtureScore)
+                    .FirstOrDefault(),
             })
             .ToListAsync(ct);
 
@@ -81,6 +97,37 @@ public class PlayersController(AppDbContext dbContext) : ControllerBase
         return Ok(results);
     }
 
+    [HttpGet("players/value-ranking")]
+    public async Task<ActionResult> GetValueRanking([FromQuery] int? position, CancellationToken ct)
+    {
+        // Preis pro Punkt = Marktwert / Gesamtpunkte - niedriger ist besser ("mehr Punkte fürs Geld").
+        // Ein Mindestpunktestand (20) filtert Spieler mit kaum Einsätzen raus, bei denen ein einzelner
+        // Punkt die Quote bedeutungslos verzerren würde.
+        var query = dbContext.Players.Where(p => p.TotalPoints >= 20);
+        if (position is > 0)
+        {
+            query = query.Where(p => p.Position == position);
+        }
+
+        var ranking = await query
+            .OrderBy(p => (double)p.MarketValue / p.TotalPoints)
+            .Take(100)
+            .Select(p => new
+            {
+                id = p.Id,
+                name = p.Name,
+                teamName = p.TeamName,
+                position = p.Position,
+                marketValue = p.MarketValue,
+                totalPoints = p.TotalPoints,
+                averagePoints = p.AveragePoints,
+                pricePerPoint = (double)p.MarketValue / p.TotalPoints,
+            })
+            .ToListAsync(ct);
+
+        return Ok(ranking);
+    }
+
     [HttpGet("players/{id}/comparables")]
     public async Task<ActionResult> GetComparables(string id, CancellationToken ct)
     {
@@ -95,13 +142,13 @@ public class PlayersController(AppDbContext dbContext) : ControllerBase
         var similarByValue = await samePosition
             .OrderBy(p => Math.Abs(p.MarketValue - player.MarketValue))
             .Take(5)
-            .Select(p => new { id = p.Id, name = p.Name, teamName = p.TeamName, marketValue = p.MarketValue, totalPoints = p.TotalPoints })
+            .Select(p => new { id = p.Id, name = p.Name, teamName = p.TeamName, marketValue = p.MarketValue, totalPoints = p.TotalPoints, averagePoints = p.AveragePoints })
             .ToListAsync(ct);
 
         var similarByPoints = await samePosition
             .OrderBy(p => Math.Abs(p.TotalPoints - player.TotalPoints))
             .Take(5)
-            .Select(p => new { id = p.Id, name = p.Name, teamName = p.TeamName, marketValue = p.MarketValue, totalPoints = p.TotalPoints })
+            .Select(p => new { id = p.Id, name = p.Name, teamName = p.TeamName, marketValue = p.MarketValue, totalPoints = p.TotalPoints, averagePoints = p.AveragePoints })
             .ToListAsync(ct);
 
         return Ok(new { similarByValue, similarByPoints });

@@ -23,6 +23,10 @@ export interface Player {
   lastSeenAt: string;
   latestLineupStatus: string | null;
   latestMarketValueChange: number | null;
+  sellScore: number | null;
+  sellMomentumScore: number | null;
+  sellLineupScore: number | null;
+  sellFixtureScore: number | null;
 }
 
 export interface PlayerSearchResult {
@@ -40,11 +44,23 @@ export interface ComparablePlayer {
   teamName: string | null;
   marketValue: number;
   totalPoints: number;
+  averagePoints: number;
 }
 
 export interface PlayerComparables {
   similarByValue: ComparablePlayer[];
   similarByPoints: ComparablePlayer[];
+}
+
+export interface ValueRankingEntry {
+  id: string;
+  name: string;
+  teamName: string | null;
+  position: number;
+  marketValue: number;
+  totalPoints: number;
+  averagePoints: number;
+  pricePerPoint: number;
 }
 
 export interface MarketValueHistoryPoint {

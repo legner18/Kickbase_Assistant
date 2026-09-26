@@ -83,6 +83,15 @@ builder.Services.AddQuartz(q =>
         // ändern sich nicht sekündlich, tägliche Sichtbarkeit reicht.
         .WithCronSchedule("0 30 21 * * ?", x => x.InTimeZone(germanyTimeZone)));
 
+    var dailySummaryJobKey = new JobKey(nameof(DailySummaryJob));
+    q.AddJob<DailySummaryJob>(opts => opts.WithIdentity(dailySummaryJobKey));
+    q.AddTrigger(t => t
+        .ForJob(dailySummaryJobKey)
+        .WithIdentity($"{nameof(DailySummaryJob)}-trigger")
+        // 15 Min nach der Liga-Analyse, damit alle Abend-Jobs (Snapshot/Alarm/Kader-Sync/Analyse)
+        // für heute schon fertig sind, bevor zusammengefasst wird.
+        .WithCronSchedule("0 30 22 * * ?", x => x.InTimeZone(germanyTimeZone)));
+
     // Phase 9+: Punkteprognose + Optimierer wird hier mit eigenem Cron-Schedule registriert.
 });
 

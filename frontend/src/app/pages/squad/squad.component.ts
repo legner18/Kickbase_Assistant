@@ -8,7 +8,7 @@ import { LeagueContextService } from '../../core/league-context.service';
 import { LINEUP_STATUS_LABELS, LeagueManager, POSITION_LABELS, Player } from '../../core/models';
 import { SparklineComponent } from '../../shared/sparkline/sparkline.component';
 
-type SortKey = 'name' | 'position' | 'marketValue' | 'change' | 'totalPoints';
+type SortKey = 'name' | 'position' | 'marketValue' | 'change' | 'totalPoints' | 'sellScore';
 
 @Component({
   selector: 'app-squad',
@@ -44,8 +44,16 @@ export class SquadComponent {
     const key = this.sortKey();
     const dir = this.sortDesc() ? -1 : 1;
     return [...list].sort((a, b) => {
-      const av = key === 'change' ? (a.latestMarketValueChange ?? 0) : key === 'name' ? a.name : a[key];
-      const bv = key === 'change' ? (b.latestMarketValueChange ?? 0) : key === 'name' ? b.name : b[key];
+      const av =
+        key === 'change' ? (a.latestMarketValueChange ?? 0)
+        : key === 'sellScore' ? (a.sellScore ?? -1)
+        : key === 'name' ? a.name
+        : a[key];
+      const bv =
+        key === 'change' ? (b.latestMarketValueChange ?? 0)
+        : key === 'sellScore' ? (b.sellScore ?? -1)
+        : key === 'name' ? b.name
+        : b[key];
       if (typeof av === 'string' || typeof bv === 'string') {
         return dir * String(av).localeCompare(String(bv));
       }
@@ -119,6 +127,15 @@ export class SquadComponent {
 
   openPlayer(playerId: string): void {
     this.router.navigate(['/spieler', playerId]);
+  }
+
+  // Same thresholds/colors as Transfermarkt's scoreColor - high is good there (worth buying) and
+  // here (fine to keep), low is a signal worth reviewing (worth selling there, worth considering
+  // a sale here), so the polarity carries over unchanged.
+  scoreColor(score: number): string {
+    if (score >= 65) return '#0ca30c';
+    if (score >= 40) return '#fab219';
+    return '#d03b3b';
   }
 
   lineupBadgeClass(status: string | null): string {

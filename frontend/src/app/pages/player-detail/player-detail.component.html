@@ -61,6 +61,7 @@
               <span class="compare-name">{{ other.name }}</span>
               <span class="compare-meta">{{ other.teamName ?? '–' }}</span>
               <span class="compare-value">{{ other.marketValue | number: '1.0-0' : 'de' }} €</span>
+              <span class="compare-sub">Ø {{ other.averagePoints }} Pkt.</span>
             </a>
           }
         }
@@ -75,6 +76,7 @@
               <span class="compare-name">{{ other.name }}</span>
               <span class="compare-meta">{{ other.teamName ?? '–' }}</span>
               <span class="compare-value">{{ other.totalPoints }} Pkt.</span>
+              <span class="compare-sub">{{ other.marketValue | number: '1.0-0' : 'de' }} €</span>
             </a>
           }
         }

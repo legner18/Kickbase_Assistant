@@ -1,0 +1,58 @@
+<div class="card-header page-header">
+  <div>
+    <h1>Preis-Leistung</h1>
+    <p class="hint">Marktweite Rangliste nach Preis pro Punkt (Marktwert ÷ Gesamtpunkte) - je niedriger, desto mehr Punkte fürs Geld.</p>
+  </div>
+  <div class="toolbar">
+    <select (change)="onPositionChange($event)">
+      <option value="">Alle Positionen</option>
+      <option value="1">TW</option>
+      <option value="2">ABW</option>
+      <option value="3">MF</option>
+      <option value="4">ST</option>
+    </select>
+    <input type="search" placeholder="Suchen…" [value]="search()" (input)="search.set($any($event.target).value)" />
+    <button class="icon-btn" (click)="load()" title="Aktualisieren">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 12a9 9 0 1 1-2.6-6.4" /><path d="M21 4v5h-5" />
+      </svg>
+    </button>
+  </div>
+</div>
+
+@if (loading()) {
+  <div class="card"><div class="skeleton" style="height: 320px"></div></div>
+} @else if (filtered().length === 0) {
+  <p class="empty-state">Keine Spieler mit genug Punkten für eine aussagekräftige Quote gefunden.</p>
+} @else {
+  <div class="card card-table">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Spieler</th>
+          <th>Pos</th>
+          <th>Team</th>
+          <th>Marktwert</th>
+          <th>Punkte gesamt</th>
+          <th>Punkte/Spiel (Ø)</th>
+          <th>€ pro Punkt</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (entry of filtered(); track entry.id; let i = $index) {
+          <tr class="clickable-row" (click)="openPlayer(entry.id)">
+            <td>{{ i + 1 }}</td>
+            <td>{{ entry.name }}</td>
+            <td>{{ positionLabels[entry.position] ?? '–' }}</td>
+            <td>{{ entry.teamName ?? '–' }}</td>
+            <td>{{ entry.marketValue | number: '1.0-0' : 'de' }} €</td>
+            <td>{{ entry.totalPoints }}</td>
+            <td>{{ entry.averagePoints }}</td>
+            <td><strong>{{ entry.pricePerPoint | number: '1.0-0' : 'de' }} €</strong></td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+}
