@@ -1,0 +1,36 @@
+@if (points().length >= 2) {
+  <div class="chart-wrap">
+    <svg
+      #svgEl
+      [attr.viewBox]="'0 0 ' + width + ' ' + height"
+      [class.positive]="overallTrendUp()"
+      [class.negative]="!overallTrendUp()"
+      (mousemove)="onMouseMove($event, $any(svgEl))"
+      (mouseleave)="onMouseLeave()"
+    >
+      <path [attr.d]="areaPath()" class="chart-area" />
+      <path [attr.d]="linePath()" class="chart-line" />
+
+      @if (hovered(); as h) {
+        <line [attr.x1]="h.x" [attr.x2]="h.x" [attr.y1]="12" [attr.y2]="height - padBottom" class="crosshair" />
+        <circle [attr.cx]="h.x" [attr.cy]="h.y" r="3.5" class="chart-dot" />
+      }
+
+      @for (p of scaled(); track p.point.date) {
+        <circle [attr.cx]="p.x" [attr.cy]="p.y" r="8" class="hit-target" />
+      }
+    </svg>
+
+    @if (hovered(); as h) {
+      <div class="tooltip" [style.left.%]="(h.x / width) * 100">
+        <div class="tooltip-date">{{ h.point.date | date: 'dd.MM.yyyy' }}</div>
+        <div class="tooltip-value">{{ h.point.marketValue | number: '1.0-0' : 'de' }} €</div>
+        <div class="tooltip-change" [class.positive]="h.point.change >= 0" [class.negative]="h.point.change < 0">
+          {{ h.point.change >= 0 ? '+' : '' }}{{ h.point.change | number: '1.0-0' : 'de' }} €
+        </div>
+      </div>
+    }
+  </div>
+} @else {
+  <p class="empty-state">Noch nicht genug Marktwert-Historie für einen Verlauf.</p>
+}

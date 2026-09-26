@@ -21,6 +21,7 @@
         <tr>
           <th class="sortable" (click)="setSort('playerName')">Spieler</th>
           <th>Team</th>
+          <th>Besitzer</th>
           <th class="sortable" (click)="setSort('price')">Preis</th>
           <th>Gebote</th>
           <th>Läuft ab</th>
@@ -31,9 +32,10 @@
       </thead>
       <tbody>
         @for (entry of sorted(); track entry.playerId) {
-          <tr>
+          <tr class="clickable-row" (click)="openPlayer(entry.playerId)">
             <td>{{ entry.playerName }}</td>
             <td>{{ entry.teamName ?? entry.teamId }}</td>
+            <td>{{ entry.ownerManagerName ?? '–' }}</td>
             <td>{{ entry.price | number: '1.0-0' : 'de' }} €</td>
             <td>{{ entry.offerCount }}</td>
             <td>{{ expiresInLabel(entry.expiresAt) }}</td>

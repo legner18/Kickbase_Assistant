@@ -197,6 +197,10 @@ tbody tr:hover {
   background: var(--surface-hover);
 }
 
+tbody tr.clickable-row {
+  cursor: pointer;
+}
+
 tbody tr:last-child td {
   border-bottom: none;
 }

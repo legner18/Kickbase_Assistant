@@ -63,6 +63,10 @@ public class KickbaseApiClient(IHttpClientFactory httpClientFactory)
         string leagueId, string managerId, CancellationToken ct = default) =>
         GetAsync<KickbaseManagerTransfersResponseDto>($"/v4/leagues/{leagueId}/managers/{managerId}/transfer", ct);
 
+    public async Task<IReadOnlyList<KickbaseManagerSquadPlayerDto>> GetManagerSquadAsync(
+        string leagueId, string managerId, CancellationToken ct = default) =>
+        (await GetAsync<KickbaseManagerSquadResponseDto>($"/v4/leagues/{leagueId}/managers/{managerId}/squad", ct)).Players;
+
     private async Task<JsonElement> GetJsonAsync(string requestUri, CancellationToken ct)
     {
         using var client = CreateClient();

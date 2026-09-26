@@ -74,6 +74,15 @@ builder.Services.AddQuartz(q =>
         // kein Zeitdruck wie bei Live-Punkten. Nach den anderen Abend-Jobs.
         .WithCronSchedule("0 15 22 * * ?", x => x.InTimeZone(germanyTimeZone)));
 
+    var leagueSquadSyncJobKey = new JobKey(nameof(LeagueSquadSyncJob));
+    q.AddJob<LeagueSquadSyncJob>(opts => opts.WithIdentity(leagueSquadSyncJobKey));
+    q.AddTrigger(t => t
+        .ForJob(leagueSquadSyncJobKey)
+        .WithIdentity($"{nameof(LeagueSquadSyncJob)}-trigger")
+        // Einmal täglich, kurz nach dem eigenen Marktwert-Snapshot - Kader von Mitspielern
+        // ändern sich nicht sekündlich, tägliche Sichtbarkeit reicht.
+        .WithCronSchedule("0 30 21 * * ?", x => x.InTimeZone(germanyTimeZone)));
+
     // Phase 9+: Punkteprognose + Optimierer wird hier mit eigenem Cron-Schedule registriert.
 });
 

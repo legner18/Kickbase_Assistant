@@ -1,0 +1,139 @@
+@if (loading()) {
+  <div class="card"><div class="skeleton" style="height: 320px"></div></div>
+} @else if (player()) {
+  @let p = player()!;
+  <div class="card-header page-header">
+    <div>
+      <a routerLink="/kader" class="back-link">← Zurück</a>
+      <h1>{{ p.name }}</h1>
+      <p class="hint">{{ positionLabels[p.position] ?? '–' }} · {{ p.teamName ?? p.teamId }}</p>
+    </div>
+  </div>
+
+  <div class="card-grid">
+    <div class="card stat-card">
+      <div>
+        <div class="stat-label">Marktwert</div>
+        <div class="stat">{{ p.marketValue | number: '1.0-0' : 'de' }} €</div>
+      </div>
+    </div>
+    <div class="card stat-card">
+      <div>
+        <div class="stat-label">Punkte gesamt</div>
+        <div class="stat">{{ p.totalPoints }}</div>
+      </div>
+    </div>
+    <div class="card stat-card">
+      <div>
+        <div class="stat-label">Trend (gespeicherte Historie)</div>
+        @if (totalChangePercent() !== null) {
+          <div class="stat" [class.positive]="totalChangePercent()! >= 0" [class.negative]="totalChangePercent()! < 0">
+            {{ totalChangePercent()! >= 0 ? '+' : '' }}{{ totalChangePercent()! | number: '1.0-1' }}%
+          </div>
+        } @else {
+          <div class="stat">–</div>
+        }
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><h2>Marktwert-Verlauf</h2></div>
+    <app-value-chart [points]="history()" />
+  </div>
+
+  @if (p.owners.length > 0) {
+    <div class="card">
+      <div class="card-header"><h2>Im Kader von</h2></div>
+      <div class="chip-row">
+        @for (owner of p.owners; track owner.managerId + owner.leagueId) {
+          <span class="badge badge-neutral">{{ owner.managerName }}</span>
+        }
+      </div>
+    </div>
+  }
+
+  @if (p.lineupHistory.length > 0) {
+    <div class="card card-table">
+      <div class="card-header" style="padding: 1.1rem 1.3rem 0"><h2>Aufstellungs-Historie (LigaInsider)</h2></div>
+      <table>
+        <thead>
+          <tr>
+            <th>Datum</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (entry of p.lineupHistory; track entry.scrapedAt) {
+            <tr>
+              <td>{{ entry.scrapedAt | date: 'dd.MM.yyyy HH:mm' }}</td>
+              <td><span class="badge" [class]="lineupBadgeClass(entry.status)">{{ lineupLabels[entry.status] ?? entry.status }}</span></td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
+  @if (p.sellAlerts.length > 0) {
+    <div class="card card-table">
+      <div class="card-header" style="padding: 1.1rem 1.3rem 0"><h2>Verkaufs-Alarme (Historie)</h2></div>
+      <table>
+        <thead>
+          <tr>
+            <th>Datum</th>
+            <th>Signal</th>
+            <th>Grund</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (alert of p.sellAlerts; track alert.createdAt + alert.signal) {
+            <tr>
+              <td>{{ alert.createdAt | date: 'dd.MM.yyyy' }}</td>
+              <td>{{ signalLabels[alert.signal] ?? alert.signal }}</td>
+              <td>{{ alert.reason }}</td>
+              <td>
+                <span class="badge" [class]="alert.acknowledged ? 'badge-neutral' : 'badge-warning'">
+                  {{ alert.acknowledged ? 'Erledigt' : 'Offen' }}
+                </span>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
+  <div class="card card-table">
+    <div class="card-header" style="padding: 1.1rem 1.3rem 0"><h2>Alle gespeicherten Marktwerte</h2></div>
+    @if (history().length === 0) {
+      <p class="empty-state">Noch keine Historie gespeichert.</p>
+    } @else {
+      <table>
+        <thead>
+          <tr>
+            <th>Datum</th>
+            <th>Marktwert</th>
+            <th>Veränderung</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (point of history().slice().reverse(); track point.date) {
+            <tr>
+              <td>{{ point.date | date: 'dd.MM.yyyy' }}</td>
+              <td>{{ point.marketValue | number: '1.0-0' : 'de' }} €</td>
+              <td>
+                <span [class]="point.change >= 0 ? 'positive' : 'negative'">
+                  {{ point.change >= 0 ? '+' : '' }}{{ point.change | number: '1.0-0' : 'de' }} €
+                </span>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+  </div>
+} @else {
+  <p class="empty-state">Spieler nicht gefunden.</p>
+}

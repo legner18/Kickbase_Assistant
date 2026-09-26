@@ -91,13 +91,19 @@ public class MarketValueSnapshotJob(
             }
 
             var oldMemberships = await dbContext.SquadMemberships
-                .Where(m => m.LeagueId == league.Id)
+                .Where(m => m.LeagueId == league.Id && m.ManagerId == league.OwnUserId)
                 .ToListAsync(ct);
             dbContext.SquadMemberships.RemoveRange(oldMemberships);
 
             foreach (var remotePlayer in squad)
             {
-                dbContext.SquadMemberships.Add(new SquadMembership { LeagueId = league.Id, PlayerId = remotePlayer.Id });
+                dbContext.SquadMemberships.Add(new SquadMembership
+                {
+                    LeagueId = league.Id,
+                    ManagerId = league.OwnUserId,
+                    ManagerName = me.Name,
+                    PlayerId = remotePlayer.Id,
+                });
 
                 var player = await dbContext.Players.FindAsync([remotePlayer.Id], ct);
                 if (player is null)

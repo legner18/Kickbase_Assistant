@@ -1,12 +1,13 @@
 import { DatePipe, DecimalPipe, NgStyle } from '@angular/common';
 import { Component, computed, effect, inject, signal } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { ApiService } from '../../core/api.service';
 import { LeagueContextService } from '../../core/league-context.service';
 import { LeagueTransfer, ManagerStat } from '../../core/models';
 
 @Component({
   selector: 'app-league-analysis',
-  imports: [DecimalPipe, DatePipe, NgStyle],
+  imports: [DecimalPipe, DatePipe, NgStyle, RouterLink],
   templateUrl: './league-analysis.component.html',
   styleUrl: './league-analysis.component.css',
 })

@@ -31,6 +31,12 @@ public class MarketScanController(AppDbContext dbContext) : ControllerBase
                 overallScore = r.OverallScore,
                 marketValueChangeAbs = r.MarketValueChangeAbs,
                 marketValueChangePercent = r.MarketValueChangePercent,
+                // Ein Marktangebot ist ein Verkauf, aber der Spieler bleibt bis zum Zuschlag im
+                // Kader des bisherigen Besitzers - genau das findet sich hier in SquadMemberships.
+                ownerManagerName = dbContext.SquadMemberships
+                    .Where(m => m.LeagueId == leagueId && m.PlayerId == r.PlayerId)
+                    .Select(m => (string?)m.ManagerName)
+                    .FirstOrDefault(),
                 scannedAt = r.ScannedAt,
             })
             .ToListAsync(ct);

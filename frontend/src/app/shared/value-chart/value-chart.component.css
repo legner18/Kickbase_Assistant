@@ -1,0 +1,87 @@
+.chart-wrap {
+  position: relative;
+  width: 100%;
+}
+
+svg {
+  width: 100%;
+  height: 220px;
+  display: block;
+  cursor: crosshair;
+}
+
+.chart-line {
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.chart-area {
+  stroke: none;
+  opacity: 0.1;
+}
+
+.chart-dot {
+  stroke: var(--surface-card);
+  stroke-width: 2;
+}
+
+svg.positive .chart-line,
+svg.positive .chart-dot {
+  stroke: var(--delta-up);
+  fill: var(--delta-up);
+}
+
+svg.positive .chart-area {
+  fill: var(--delta-up);
+}
+
+svg.negative .chart-line,
+svg.negative .chart-dot {
+  stroke: var(--delta-down);
+  fill: var(--delta-down);
+}
+
+svg.negative .chart-area {
+  fill: var(--delta-down);
+}
+
+.crosshair {
+  stroke: var(--border);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+}
+
+.hit-target {
+  fill: transparent;
+  pointer-events: all;
+}
+
+.tooltip {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  background: var(--surface-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow);
+  padding: 0.45rem 0.65rem;
+  font-size: 0.78rem;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.tooltip-date {
+  color: var(--text-muted);
+  font-size: 0.7rem;
+}
+
+.tooltip-value {
+  font-weight: 600;
+}
+
+.tooltip-change {
+  font-size: 0.75rem;
+}

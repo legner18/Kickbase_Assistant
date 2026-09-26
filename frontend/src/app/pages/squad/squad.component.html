@@ -1,9 +1,16 @@
 <div class="card-header page-header">
   <div>
-    <h1>Mein Kader</h1>
+    <h1>Kader</h1>
     <p class="hint">{{ leagueContext.selectedLeague()?.name }} · {{ players().length }} Spieler · Gesamtwert {{ totalValue() | number: '1.0-0' : 'de' }} €</p>
   </div>
   <div class="toolbar">
+    @if (managers().length > 0) {
+      <select [value]="selectedManagerId() ?? ''" (change)="onManagerChange($event)">
+        @for (m of managers(); track m.managerId) {
+          <option [value]="m.managerId">{{ m.isMe ? 'Ich (' + m.managerName + ')' : m.managerName }}</option>
+        }
+      </select>
+    }
     <input type="search" placeholder="Suchen…" [value]="search()" (input)="search.set($any($event.target).value)" />
     <button class="icon-btn" (click)="refresh()" title="Aktualisieren">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -16,7 +23,7 @@
 @if (loading()) {
   <div class="card"><div class="skeleton" style="height: 320px"></div></div>
 } @else if (players().length === 0) {
-  <p class="empty-state">Noch keine Kaderdaten für diese Liga vorhanden.</p>
+  <p class="empty-state">Noch keine Kaderdaten für diese Liga/diesen Manager vorhanden.</p>
 } @else {
   <div class="card card-table">
     <table>
@@ -34,7 +41,7 @@
       </thead>
       <tbody>
         @for (player of filteredSorted(); track player.id) {
-          <tr>
+          <tr class="clickable-row" (click)="openPlayer(player.id)">
             <td>{{ player.name }}</td>
             <td>{{ positionLabels[player.position] ?? '–' }}</td>
             <td>{{ player.teamName ?? player.teamId }}</td>

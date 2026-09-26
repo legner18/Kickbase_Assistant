@@ -1,10 +1,11 @@
 import { DecimalPipe } from '@angular/common';
 import { Component, computed, effect, inject, signal } from '@angular/core';
+import { Router } from '@angular/router';
 import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { ApiService } from '../../core/api.service';
 import { LeagueContextService } from '../../core/league-context.service';
-import { LINEUP_STATUS_LABELS, POSITION_LABELS, Player } from '../../core/models';
+import { LINEUP_STATUS_LABELS, LeagueManager, POSITION_LABELS, Player } from '../../core/models';
 import { SparklineComponent } from '../../shared/sparkline/sparkline.component';
 
 type SortKey = 'name' | 'position' | 'marketValue' | 'change' | 'totalPoints';
@@ -17,6 +18,7 @@ type SortKey = 'name' | 'position' | 'marketValue' | 'change' | 'totalPoints';
 })
 export class SquadComponent {
   private readonly api = inject(ApiService);
+  private readonly router = inject(Router);
   readonly leagueContext = inject(LeagueContextService);
 
   readonly players = signal<Player[]>([]);
@@ -25,6 +27,9 @@ export class SquadComponent {
   readonly search = signal('');
   readonly sortKey = signal<SortKey>('marketValue');
   readonly sortDesc = signal(true);
+
+  readonly managers = signal<LeagueManager[]>([]);
+  readonly selectedManagerId = signal<string | null>(null);
 
   readonly positionLabels = POSITION_LABELS;
   readonly lineupLabels = LINEUP_STATUS_LABELS;
@@ -54,15 +59,26 @@ export class SquadComponent {
     this.leagueContext.ensureLoaded();
     effect(() => {
       const leagueId = this.leagueContext.selectedLeagueId();
-      if (leagueId) {
-        this.load(leagueId);
+      if (!leagueId) {
+        return;
       }
+      this.selectedManagerId.set(null);
+      this.api.getManagers(leagueId).subscribe((managers) => this.managers.set(managers));
+      this.load(leagueId, undefined);
     });
   }
 
-  load(leagueId: string): void {
+  onManagerChange(event: Event): void {
+    const value = (event.target as HTMLSelectElement).value;
+    const leagueId = this.leagueContext.selectedLeagueId();
+    if (!leagueId) return;
+    this.selectedManagerId.set(value || null);
+    this.load(leagueId, value || undefined);
+  }
+
+  load(leagueId: string, managerId: string | undefined): void {
     this.loading.set(true);
-    this.api.getSquad(leagueId).subscribe((players) => {
+    this.api.getSquad(leagueId, managerId).subscribe((players) => {
       this.players.set(players);
       this.loading.set(false);
 
@@ -88,7 +104,7 @@ export class SquadComponent {
   refresh(): void {
     const leagueId = this.leagueContext.selectedLeagueId();
     if (leagueId) {
-      this.load(leagueId);
+      this.load(leagueId, this.selectedManagerId() ?? undefined);
     }
   }
 
@@ -99,6 +115,10 @@ export class SquadComponent {
       this.sortKey.set(key);
       this.sortDesc.set(true);
     }
+  }
+
+  openPlayer(playerId: string): void {
+    this.router.navigate(['/spieler', playerId]);
   }
 
   lineupBadgeClass(status: string | null): string {

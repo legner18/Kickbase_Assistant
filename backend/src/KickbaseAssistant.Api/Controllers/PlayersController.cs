@@ -9,10 +9,21 @@ namespace KickbaseAssistant.Api.Controllers;
 public class PlayersController(AppDbContext dbContext) : ControllerBase
 {
     [HttpGet("leagues/{leagueId}/squad")]
-    public async Task<ActionResult> GetSquad(string leagueId, CancellationToken ct)
+    public async Task<ActionResult> GetSquad(string leagueId, [FromQuery] string? managerId, CancellationToken ct)
     {
+        var effectiveManagerId = managerId;
+        if (effectiveManagerId is null)
+        {
+            var league = await dbContext.Leagues.FindAsync([leagueId], ct);
+            if (league is null)
+            {
+                return NotFound();
+            }
+            effectiveManagerId = league.OwnUserId;
+        }
+
         var players = await dbContext.SquadMemberships
-            .Where(m => m.LeagueId == leagueId)
+            .Where(m => m.LeagueId == leagueId && m.ManagerId == effectiveManagerId)
             .Select(m => m.Player!)
             .OrderBy(p => p.Name)
             .Select(p => new
@@ -39,6 +50,49 @@ public class PlayersController(AppDbContext dbContext) : ControllerBase
             .ToListAsync(ct);
 
         return Ok(players);
+    }
+
+    [HttpGet("players/{id}")]
+    public async Task<ActionResult> GetDetail(string id, CancellationToken ct)
+    {
+        var player = await dbContext.Players.FindAsync([id], ct);
+        if (player is null)
+        {
+            return NotFound();
+        }
+
+        var lineupHistory = await dbContext.LineupPredictions
+            .Where(l => l.PlayerId == id)
+            .OrderByDescending(l => l.ScrapedAt)
+            .Take(30)
+            .Select(l => new { status = l.Status.ToString(), scrapedAt = l.ScrapedAt, source = l.Source })
+            .ToListAsync(ct);
+
+        var sellAlerts = await dbContext.SellAlerts
+            .Where(a => a.PlayerId == id)
+            .OrderByDescending(a => a.CreatedAt)
+            .Select(a => new { signal = a.Signal.ToString(), reason = a.Reason, createdAt = a.CreatedAt, acknowledged = a.Acknowledged })
+            .ToListAsync(ct);
+
+        var owners = await dbContext.SquadMemberships
+            .Where(m => m.PlayerId == id)
+            .Select(m => new { m.LeagueId, m.ManagerId, m.ManagerName })
+            .ToListAsync(ct);
+
+        return Ok(new
+        {
+            id = player.Id,
+            name = player.Name,
+            teamId = player.TeamId,
+            teamName = player.TeamName,
+            position = player.Position,
+            marketValue = player.MarketValue,
+            totalPoints = player.TotalPoints,
+            lastSeenAt = player.LastSeenAt,
+            lineupHistory,
+            sellAlerts,
+            owners,
+        });
     }
 
     [HttpGet("players/{id}/market-value-history")]

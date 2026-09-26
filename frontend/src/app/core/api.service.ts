@@ -4,11 +4,13 @@ import { Observable } from 'rxjs';
 import { API_BASE_URL } from './api-config';
 import {
   League,
+  LeagueManager,
   LeagueTransfer,
   ManagerStat,
   MarketScanEntry,
   MarketValueHistoryPoint,
   Player,
+  PlayerDetail,
   SellAlert,
 } from './models';
 
@@ -21,8 +23,17 @@ export class ApiService {
     return this.http.get<League[]>(`${this.base}/api/leagues`);
   }
 
-  getSquad(leagueId: string): Observable<Player[]> {
-    return this.http.get<Player[]>(`${this.base}/api/leagues/${leagueId}/squad`);
+  getManagers(leagueId: string): Observable<LeagueManager[]> {
+    return this.http.get<LeagueManager[]>(`${this.base}/api/leagues/${leagueId}/managers`);
+  }
+
+  getSquad(leagueId: string, managerId?: string): Observable<Player[]> {
+    const query = managerId ? `?managerId=${managerId}` : '';
+    return this.http.get<Player[]>(`${this.base}/api/leagues/${leagueId}/squad${query}`);
+  }
+
+  getPlayerDetail(playerId: string): Observable<PlayerDetail> {
+    return this.http.get<PlayerDetail>(`${this.base}/api/players/${playerId}`);
   }
 
   getMarketValueHistory(playerId: string): Observable<MarketValueHistoryPoint[]> {

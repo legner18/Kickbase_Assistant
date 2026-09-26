@@ -72,7 +72,7 @@
                 {{ transfer.type === 'Buy' ? 'Kauf' : 'Verkauf' }}
               </span>
             </td>
-            <td>{{ transfer.playerName }}</td>
+            <td><a [routerLink]="['/spieler', transfer.playerId]">{{ transfer.playerName }}</a></td>
             <td>{{ transfer.price | number: '1.0-0' : 'de' }} €</td>
           </tr>
         }

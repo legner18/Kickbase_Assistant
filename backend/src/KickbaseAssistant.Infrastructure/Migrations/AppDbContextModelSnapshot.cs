@@ -171,6 +171,16 @@ namespace KickbaseAssistant.Infrastructure.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
 
+                    b.Property<string>("ManagerId")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("ManagerName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
                     b.Property<string>("PlayerId")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -180,7 +190,7 @@ namespace KickbaseAssistant.Infrastructure.Migrations
 
                     b.HasIndex("PlayerId");
 
-                    b.HasIndex("LeagueId", "PlayerId")
+                    b.HasIndex("LeagueId", "ManagerId", "PlayerId")
                         .IsUnique();
 
                     b.ToTable("SquadMemberships");

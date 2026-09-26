@@ -114,9 +114,11 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         builder.Entity<SquadMembership>(m =>
         {
             m.Property(x => x.LeagueId).IsRequired().HasMaxLength(50);
+            m.Property(x => x.ManagerId).IsRequired().HasMaxLength(50);
+            m.Property(x => x.ManagerName).IsRequired().HasMaxLength(200);
             m.Property(x => x.PlayerId).IsRequired().HasMaxLength(50);
 
-            m.HasIndex(x => new { x.LeagueId, x.PlayerId }).IsUnique();
+            m.HasIndex(x => new { x.LeagueId, x.ManagerId, x.PlayerId }).IsUnique();
 
             m.HasOne(x => x.Player)
                 .WithMany()

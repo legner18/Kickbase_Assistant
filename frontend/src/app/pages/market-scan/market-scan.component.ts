@@ -1,5 +1,6 @@
 import { DecimalPipe } from '@angular/common';
 import { Component, computed, effect, inject, signal } from '@angular/core';
+import { Router } from '@angular/router';
 import { ApiService } from '../../core/api.service';
 import { LeagueContextService } from '../../core/league-context.service';
 import { MarketScanEntry, POSITION_LABELS } from '../../core/models';
@@ -14,6 +15,7 @@ type SortKey = 'playerName' | 'price' | 'marketValueChangePercent' | 'overallSco
 })
 export class MarketScanComponent {
   private readonly api = inject(ApiService);
+  private readonly router = inject(Router);
   readonly leagueContext = inject(LeagueContextService);
 
   readonly entries = signal<MarketScanEntry[]>([]);
@@ -59,6 +61,10 @@ export class MarketScanComponent {
     if (leagueId) {
       this.load(leagueId);
     }
+  }
+
+  openPlayer(playerId: string): void {
+    this.router.navigate(['/spieler', playerId]);
   }
 
   setSort(key: SortKey): void {

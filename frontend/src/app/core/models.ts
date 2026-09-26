@@ -2,6 +2,13 @@ export interface League {
   id: string;
   name: string;
   competitionId: string;
+  ownUserId: string;
+}
+
+export interface LeagueManager {
+  managerId: string;
+  managerName: string;
+  isMe: boolean;
 }
 
 export interface Player {
@@ -48,7 +55,41 @@ export interface MarketScanEntry {
   overallScore: number;
   marketValueChangeAbs: number | null;
   marketValueChangePercent: number | null;
+  ownerManagerName: string | null;
   scannedAt: string;
+}
+
+export interface LineupHistoryEntry {
+  status: string;
+  scrapedAt: string;
+  source: string;
+}
+
+export interface PlayerOwner {
+  leagueId: string;
+  managerId: string;
+  managerName: string;
+}
+
+export interface PlayerSellAlert {
+  signal: string;
+  reason: string;
+  createdAt: string;
+  acknowledged: boolean;
+}
+
+export interface PlayerDetail {
+  id: string;
+  name: string;
+  teamId: string;
+  teamName: string | null;
+  position: number;
+  marketValue: number;
+  totalPoints: number;
+  lastSeenAt: string;
+  lineupHistory: LineupHistoryEntry[];
+  sellAlerts: PlayerSellAlert[];
+  owners: PlayerOwner[];
 }
 
 export interface ManagerStat {

@@ -49,7 +49,7 @@
     } @else {
       @for (p of topGainers(); track p.id) {
         <div class="mover-row">
-          <span>{{ p.name }}</span>
+          <a [routerLink]="['/spieler', p.id]">{{ p.name }}</a>
           <span class="positive">+{{ p.latestMarketValueChange | number: '1.0-0' : 'de' }} €</span>
         </div>
       }
@@ -62,7 +62,7 @@
     } @else {
       @for (p of topLosers(); track p.id) {
         <div class="mover-row">
-          <span>{{ p.name }}</span>
+          <a [routerLink]="['/spieler', p.id]">{{ p.name }}</a>
           <span class="negative">{{ p.latestMarketValueChange | number: '1.0-0' : 'de' }} €</span>
         </div>
       }
