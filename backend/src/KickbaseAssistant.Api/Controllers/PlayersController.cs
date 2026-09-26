@@ -5,14 +5,15 @@ using Microsoft.EntityFrameworkCore;
 namespace KickbaseAssistant.Api.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api")]
 public class PlayersController(AppDbContext dbContext) : ControllerBase
 {
-    [HttpGet]
-    public async Task<ActionResult> GetAll(CancellationToken ct)
+    [HttpGet("leagues/{leagueId}/squad")]
+    public async Task<ActionResult> GetSquad(string leagueId, CancellationToken ct)
     {
-        var players = await dbContext.Players
-            .Where(p => p.IsInSquad)
+        var players = await dbContext.SquadMemberships
+            .Where(m => m.LeagueId == leagueId)
+            .Select(m => m.Player!)
             .OrderBy(p => p.Name)
             .Select(p => new
             {
@@ -40,7 +41,7 @@ public class PlayersController(AppDbContext dbContext) : ControllerBase
         return Ok(players);
     }
 
-    [HttpGet("{id}/market-value-history")]
+    [HttpGet("players/{id}/market-value-history")]
     public async Task<ActionResult> GetMarketValueHistory(string id, CancellationToken ct)
     {
         var history = await dbContext.MarketValueSnapshots

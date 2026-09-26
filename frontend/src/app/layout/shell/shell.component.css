@@ -1,64 +1,153 @@
 .shell {
   min-height: 100vh;
   display: flex;
-  flex-direction: column;
 }
 
-.topbar {
+.sidebar {
+  width: var(--sidebar-width);
+  flex-shrink: 0;
+  background: var(--surface-card);
+  border-right: 1px solid var(--border);
   display: flex;
-  align-items: center;
-  gap: 1.5rem;
-  background: #14502f;
-  color: white;
-  padding: 0.75rem 1.5rem;
+  flex-direction: column;
+  padding: 1.1rem 0.9rem;
+  position: sticky;
+  top: 0;
+  height: 100vh;
 }
 
 .brand {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
   font-weight: 700;
-  font-size: 1.05rem;
-  white-space: nowrap;
+  font-size: 0.95rem;
+  padding: 0 0.4rem;
+  margin-bottom: 1.4rem;
+  color: var(--text-primary);
+}
+
+.brand-icon {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  color: var(--primary);
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.league-picker {
+  margin-bottom: 1.2rem;
+  padding: 0 0.4rem;
+}
+
+.league-picker label {
+  display: block;
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  margin-bottom: 0.3rem;
+}
+
+.league-picker select {
+  width: 100%;
 }
 
 .nav {
   display: flex;
-  gap: 1rem;
+  flex-direction: column;
+  gap: 0.15rem;
   flex: 1;
-  flex-wrap: wrap;
 }
 
 .nav a {
-  color: rgba(255, 255, 255, 0.8);
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.55rem 0.7rem;
+  border-radius: var(--radius);
+  color: var(--text-secondary);
+  font-size: 0.87rem;
+  font-weight: 500;
   text-decoration: none;
-  font-size: 0.9rem;
-  padding: 0.25rem 0;
-  border-bottom: 2px solid transparent;
+  transition: background-color 0.12s ease, color 0.12s ease;
+}
+
+.nav a svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .nav a:hover {
-  color: white;
+  background: var(--surface-hover);
+  color: var(--text-primary);
+  text-decoration: none;
 }
 
 .nav a.active {
-  color: white;
-  border-bottom-color: white;
+  background: color-mix(in srgb, var(--primary) 12%, transparent);
+  color: var(--primary);
 }
 
-.league-select {
-  background: rgba(255, 255, 255, 0.1);
-  color: white;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: 6px;
-  padding: 0.3rem 0.5rem;
+.theme-toggle {
+  margin-top: 0.5rem;
+  width: 100%;
+  justify-content: flex-start;
+  background: transparent;
+  border-color: transparent;
+  color: var(--text-secondary);
 }
 
-.league-select option {
-  color: black;
+.theme-toggle:hover {
+  background: var(--surface-hover);
+}
+
+.theme-toggle svg {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .content {
   flex: 1;
-  padding: 1.5rem;
-  max-width: 1200px;
-  width: 100%;
-  margin: 0 auto;
+  padding: 1.75rem 2.25rem;
+  max-width: 1280px;
+  min-width: 0;
+}
+
+@media (max-width: 900px) {
+  .shell {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    width: 100%;
+    height: auto;
+    position: static;
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+
+  .nav {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .content {
+    padding: 1.25rem;
+  }
 }

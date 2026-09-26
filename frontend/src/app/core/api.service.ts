@@ -21,8 +21,8 @@ export class ApiService {
     return this.http.get<League[]>(`${this.base}/api/leagues`);
   }
 
-  getPlayers(): Observable<Player[]> {
-    return this.http.get<Player[]>(`${this.base}/api/players`);
+  getSquad(leagueId: string): Observable<Player[]> {
+    return this.http.get<Player[]>(`${this.base}/api/leagues/${leagueId}/squad`);
   }
 
   getMarketValueHistory(playerId: string): Observable<MarketValueHistoryPoint[]> {

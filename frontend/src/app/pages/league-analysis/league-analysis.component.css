@@ -1,5 +1,77 @@
 .hint {
-  color: var(--color-text-muted);
-  margin-top: -0.5rem;
-  margin-bottom: 1rem;
+  margin: 0.15rem 0 0;
+}
+
+.budget-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.budget-row {
+  display: grid;
+  grid-template-columns: 110px 1fr 110px 90px 90px;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.85rem;
+}
+
+.budget-name {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.budget-track {
+  position: relative;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--surface-sunken);
+  overflow: hidden;
+}
+
+.budget-fill {
+  position: absolute;
+  top: 0;
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  transition:
+    width 0.3s ease,
+    left 0.3s ease;
+}
+
+.budget-zero {
+  position: absolute;
+  top: -2px;
+  bottom: -2px;
+  width: 2px;
+  background: var(--border);
+  z-index: 1;
+}
+
+.budget-value {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.budget-overpay {
+  text-align: center;
+}
+
+.budget-count {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+
+@media (max-width: 700px) {
+  .budget-row {
+    grid-template-columns: 90px 1fr 90px;
+  }
+  .budget-overpay,
+  .budget-count {
+    display: none;
+  }
 }

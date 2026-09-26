@@ -22,5 +22,9 @@ public class MarketScanResult
     public double FixtureScore { get; set; }
     public double OverallScore { get; set; }
 
+    /// <summary>Absolute/percent market-value change over the momentum window (see TransferMarketScanJob) - null if there wasn't enough history to compute it.</summary>
+    public double? MarketValueChangeAbs { get; set; }
+    public double? MarketValueChangePercent { get; set; }
+
     public DateTimeOffset ScannedAt { get; set; }
 }

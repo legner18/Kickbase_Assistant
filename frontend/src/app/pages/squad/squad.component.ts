@@ -1,39 +1,116 @@
 import { DecimalPipe } from '@angular/common';
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, computed, effect, inject, signal } from '@angular/core';
+import { forkJoin, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import { ApiService } from '../../core/api.service';
+import { LeagueContextService } from '../../core/league-context.service';
 import { LINEUP_STATUS_LABELS, POSITION_LABELS, Player } from '../../core/models';
+import { SparklineComponent } from '../../shared/sparkline/sparkline.component';
+
+type SortKey = 'name' | 'position' | 'marketValue' | 'change' | 'totalPoints';
 
 @Component({
   selector: 'app-squad',
-  imports: [DecimalPipe],
+  imports: [DecimalPipe, SparklineComponent],
   templateUrl: './squad.component.html',
   styleUrl: './squad.component.css',
 })
-export class SquadComponent implements OnInit {
+export class SquadComponent {
   private readonly api = inject(ApiService);
+  readonly leagueContext = inject(LeagueContextService);
 
   readonly players = signal<Player[]>([]);
+  readonly history = signal<Record<string, number[]>>({});
   readonly loading = signal(true);
+  readonly search = signal('');
+  readonly sortKey = signal<SortKey>('marketValue');
+  readonly sortDesc = signal(true);
 
   readonly positionLabels = POSITION_LABELS;
   readonly lineupLabels = LINEUP_STATUS_LABELS;
 
-  ngOnInit(): void {
-    this.api.getPlayers().subscribe((players) => {
+  readonly filteredSorted = computed(() => {
+    const term = this.search().trim().toLowerCase();
+    let list = this.players();
+    if (term) {
+      list = list.filter((p) => p.name.toLowerCase().includes(term) || (p.teamName ?? '').toLowerCase().includes(term));
+    }
+
+    const key = this.sortKey();
+    const dir = this.sortDesc() ? -1 : 1;
+    return [...list].sort((a, b) => {
+      const av = key === 'change' ? (a.latestMarketValueChange ?? 0) : key === 'name' ? a.name : a[key];
+      const bv = key === 'change' ? (b.latestMarketValueChange ?? 0) : key === 'name' ? b.name : b[key];
+      if (typeof av === 'string' || typeof bv === 'string') {
+        return dir * String(av).localeCompare(String(bv));
+      }
+      return dir * ((av as number) - (bv as number));
+    });
+  });
+
+  readonly totalValue = computed(() => this.players().reduce((sum, p) => sum + p.marketValue, 0));
+
+  constructor() {
+    this.leagueContext.ensureLoaded();
+    effect(() => {
+      const leagueId = this.leagueContext.selectedLeagueId();
+      if (leagueId) {
+        this.load(leagueId);
+      }
+    });
+  }
+
+  load(leagueId: string): void {
+    this.loading.set(true);
+    this.api.getSquad(leagueId).subscribe((players) => {
       this.players.set(players);
       this.loading.set(false);
+
+      if (players.length === 0) {
+        this.history.set({});
+        return;
+      }
+
+      forkJoin(
+        Object.fromEntries(
+          players.map((p) => [p.id, this.api.getMarketValueHistory(p.id).pipe(catchError(() => of([])))]),
+        ),
+      ).subscribe((result) => {
+        const map: Record<string, number[]> = {};
+        for (const [playerId, points] of Object.entries(result)) {
+          map[playerId] = points.slice(-21).map((pt) => pt.marketValue);
+        }
+        this.history.set(map);
+      });
     });
+  }
+
+  refresh(): void {
+    const leagueId = this.leagueContext.selectedLeagueId();
+    if (leagueId) {
+      this.load(leagueId);
+    }
+  }
+
+  setSort(key: SortKey): void {
+    if (this.sortKey() === key) {
+      this.sortDesc.update((d) => !d);
+    } else {
+      this.sortKey.set(key);
+      this.sortDesc.set(true);
+    }
   }
 
   lineupBadgeClass(status: string | null): string {
     switch (status) {
       case 'Starting':
-        return 'badge-ok';
+        return 'badge-good';
       case 'Doubtful':
         return 'badge-warning';
       case 'Bench':
+        return 'badge-neutral';
       case 'Out':
-        return 'badge-danger';
+        return 'badge-critical';
       default:
         return 'badge-neutral';
     }

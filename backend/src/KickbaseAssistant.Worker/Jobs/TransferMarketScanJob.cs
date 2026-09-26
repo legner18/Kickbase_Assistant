@@ -37,6 +37,7 @@ public class TransferMarketScanJob(
         var activeLeagues = await dbContext.Leagues.Where(l => l.IsActive).ToListAsync(ct);
 
         var placementsByCompetition = new Dictionary<string, Dictionary<string, int>>();
+        var teamNamesByCompetition = new Dictionary<string, Dictionary<string, string>>();
         var matchdaysByCompetition = new Dictionary<string, IReadOnlyList<KickbaseMatchdayDto>>();
         var totalScanned = 0;
 
@@ -61,11 +62,14 @@ public class TransferMarketScanJob(
                 continue;
             }
 
-            if (!placementsByCompetition.TryGetValue(league.CompetitionId, out var placements))
+            if (!placementsByCompetition.TryGetValue(league.CompetitionId, out var placements)
+                || !teamNamesByCompetition.TryGetValue(league.CompetitionId, out var teamNames))
             {
                 var table = await kickbaseApiClient.GetCompetitionTableAsync(league.CompetitionId, ct);
                 placements = table.ToDictionary(t => t.Id, t => t.CurrentPlacement);
+                teamNames = table.ToDictionary(t => t.Id, t => t.Name);
                 placementsByCompetition[league.CompetitionId] = placements;
+                teamNamesByCompetition[league.CompetitionId] = teamNames;
             }
 
             if (!matchdaysByCompetition.TryGetValue(league.CompetitionId, out var matchdays))
@@ -78,9 +82,9 @@ public class TransferMarketScanJob(
 
             foreach (var marketPlayer in marketPlayers)
             {
-                await UpsertPlayerAsync(marketPlayer, league.CompetitionId, ct);
+                await UpsertPlayerAsync(marketPlayer, league.CompetitionId, teamNames, ct);
 
-                var momentumScore = await ComputeMomentumScoreAsync(league.CompetitionId, marketPlayer.Id, ct);
+                var momentum = await ComputeMomentumAsync(league.CompetitionId, marketPlayer.Id, ct);
                 var lineupScore = await ComputeLineupScoreAsync(marketPlayer.Id, ct);
                 var fixtureScore = ComputeFixtureScore(marketPlayer.TeamId, matchdays, currentMatchday, placements);
 
@@ -91,10 +95,12 @@ public class TransferMarketScanJob(
                     Price = marketPlayer.Price,
                     OfferCount = marketPlayer.OfferCount,
                     ExpiresAt = DateTimeOffset.UtcNow.AddSeconds(marketPlayer.ExpiresInSeconds),
-                    MomentumScore = momentumScore,
+                    MomentumScore = momentum.Score,
                     LineupScore = lineupScore,
                     FixtureScore = fixtureScore,
-                    OverallScore = (momentumScore + lineupScore + fixtureScore) / 3.0,
+                    OverallScore = (momentum.Score + lineupScore + fixtureScore) / 3.0,
+                    MarketValueChangeAbs = momentum.AbsChange,
+                    MarketValueChangePercent = momentum.PercentChange,
                     ScannedAt = DateTimeOffset.UtcNow,
                 });
                 totalScanned++;
@@ -108,7 +114,8 @@ public class TransferMarketScanJob(
             activeLeagues.Count, totalScanned);
     }
 
-    private async Task UpsertPlayerAsync(KickbaseMarketPlayerDto marketPlayer, string competitionId, CancellationToken ct)
+    private async Task UpsertPlayerAsync(
+        KickbaseMarketPlayerDto marketPlayer, string competitionId, Dictionary<string, string> teamNames, CancellationToken ct)
     {
         var player = await dbContext.Players.FindAsync([marketPlayer.Id], ct);
         if (player is null)
@@ -126,6 +133,7 @@ public class TransferMarketScanJob(
 
         player.Name = marketPlayer.Name;
         player.TeamId = marketPlayer.TeamId;
+        player.TeamName = teamNames.GetValueOrDefault(marketPlayer.TeamId, player.TeamName);
         player.Position = marketPlayer.Position;
         player.MarketValue = marketPlayer.MarketValue;
         player.TotalPoints = marketPlayer.TotalPoints;
@@ -133,7 +141,7 @@ public class TransferMarketScanJob(
         // IsInSquad bleibt unangetastet - ein Marktangebot ist keine Kader-Mitgliedschaft.
     }
 
-    private async Task<double> ComputeMomentumScoreAsync(string competitionId, string playerId, CancellationToken ct)
+    private async Task<MomentumResult> ComputeMomentumAsync(string competitionId, string playerId, CancellationToken ct)
     {
         try
         {
@@ -141,7 +149,7 @@ public class TransferMarketScanJob(
                 competitionId, playerId, MarketValueTimeframeDays, ct);
             if (history.Count < 2)
             {
-                return 50;
+                return new MomentumResult(50, null, null);
             }
 
             var window = history.Count > MomentumWindowDays
@@ -151,18 +159,21 @@ public class TransferMarketScanJob(
             var last = window[^1].MarketValue;
             if (first <= 0)
             {
-                return 50;
+                return new MomentumResult(50, null, null);
             }
 
             var pctChange = (last - first) / first;
-            return Math.Clamp(50 + pctChange * 500, 0, 100);
+            var score = Math.Clamp(50 + pctChange * 500, 0, 100);
+            return new MomentumResult(score, last - first, pctChange * 100);
         }
         catch (Exception ex)
         {
             logger.LogWarning(ex, "Marktwert-Historie für Spieler {PlayerId} konnte nicht geladen werden.", playerId);
-            return 50;
+            return new MomentumResult(50, null, null);
         }
     }
+
+    private sealed record MomentumResult(double Score, double? AbsChange, double? PercentChange);
 
     private async Task<double> ComputeLineupScoreAsync(string playerId, CancellationToken ct)
     {

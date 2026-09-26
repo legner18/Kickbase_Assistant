@@ -158,6 +158,34 @@ namespace KickbaseAssistant.Infrastructure.Migrations
                     b.ToTable("LeagueTransfers");
                 });
 
+            modelBuilder.Entity("KickbaseAssistant.Domain.Leagues.SquadMembership", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("LeagueId")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("PlayerId")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PlayerId");
+
+                    b.HasIndex("LeagueId", "PlayerId")
+                        .IsUnique();
+
+                    b.ToTable("SquadMemberships");
+                });
+
             modelBuilder.Entity("KickbaseAssistant.Domain.Players.LineupPrediction", b =>
                 {
                     b.Property<long>("Id")
@@ -213,6 +241,12 @@ namespace KickbaseAssistant.Infrastructure.Migrations
                         .HasColumnType("character varying(50)");
 
                     b.Property<double>("LineupScore")
+                        .HasColumnType("double precision");
+
+                    b.Property<double?>("MarketValueChangeAbs")
+                        .HasColumnType("double precision");
+
+                    b.Property<double?>("MarketValueChangePercent")
                         .HasColumnType("double precision");
 
                     b.Property<double>("MomentumScore")
@@ -354,6 +388,17 @@ namespace KickbaseAssistant.Infrastructure.Migrations
                     b.HasIndex("PlayerId", "Signal", "CreatedAt");
 
                     b.ToTable("SellAlerts");
+                });
+
+            modelBuilder.Entity("KickbaseAssistant.Domain.Leagues.SquadMembership", b =>
+                {
+                    b.HasOne("KickbaseAssistant.Domain.Players.Player", "Player")
+                        .WithMany()
+                        .HasForeignKey("PlayerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Player");
                 });
 
             modelBuilder.Entity("KickbaseAssistant.Domain.Players.LineupPrediction", b =>

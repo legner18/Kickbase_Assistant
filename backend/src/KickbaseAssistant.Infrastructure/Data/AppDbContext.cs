@@ -14,6 +14,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<League> Leagues => Set<League>();
     public DbSet<LeagueTransfer> LeagueTransfers => Set<LeagueTransfer>();
     public DbSet<LeagueManagerStat> LeagueManagerStats => Set<LeagueManagerStat>();
+    public DbSet<SquadMembership> SquadMemberships => Set<SquadMembership>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -108,6 +109,19 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             s.Property(x => x.ManagerName).IsRequired().HasMaxLength(200);
 
             s.HasIndex(x => new { x.LeagueId, x.ManagerId }).IsUnique();
+        });
+
+        builder.Entity<SquadMembership>(m =>
+        {
+            m.Property(x => x.LeagueId).IsRequired().HasMaxLength(50);
+            m.Property(x => x.PlayerId).IsRequired().HasMaxLength(50);
+
+            m.HasIndex(x => new { x.LeagueId, x.PlayerId }).IsUnique();
+
+            m.HasOne(x => x.Player)
+                .WithMany()
+                .HasForeignKey(x => x.PlayerId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }

@@ -1,29 +1,54 @@
 .hint {
-  color: var(--color-text-muted);
-  margin-top: -0.5rem;
-  margin-bottom: 1rem;
+  margin: 0.15rem 0 0;
 }
 
 .alert-card {
   display: flex;
-  justify-content: space-between;
   align-items: center;
   gap: 1rem;
+}
+
+.alert-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: color-mix(in srgb, var(--status-warning) 18%, transparent);
+  color: color-mix(in srgb, var(--status-warning) 70%, black);
+}
+
+.alert-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.alert-icon.signal-InjuryNews {
+  background: color-mix(in srgb, var(--status-critical) 16%, transparent);
+  color: var(--status-critical);
+}
+
+.alert-main {
+  flex: 1;
+  min-width: 0;
 }
 
 .alert-title {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  margin-bottom: 0.25rem;
+  margin-bottom: 0.2rem;
 }
 
 .alert-reason {
-  color: var(--color-text);
+  color: var(--text-primary);
+  font-size: 0.87rem;
 }
 
 .alert-date {
-  color: var(--color-text-muted);
-  font-size: 0.8rem;
-  margin-top: 0.25rem;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  margin-top: 0.2rem;
 }

@@ -1,18 +1,21 @@
-<h1>Live-Punkte</h1>
-
-<div class="card status-card">
-  <span>Verbindung:</span>
-  <span
-    class="badge"
-    [class]="liveHub.connectionState() === 'connected' ? 'badge-ok' : 'badge-neutral'"
-  >
-    {{ liveHub.connectionState() === 'connected' ? 'verbunden' : liveHub.connectionState() === 'connecting' ? 'verbinde…' : 'getrennt' }}
-  </span>
+<div class="card-header page-header">
+  <div>
+    <h1>Live-Punkte</h1>
+    <p class="hint">{{ leagueContext.selectedLeague()?.name }} · Live-Updates kommen automatisch per SignalR an, sobald ein Spiel läuft.</p>
+  </div>
+  <div class="toolbar">
+    <span class="badge" [class]="liveHub.connectionState() === 'connected' ? 'badge-good' : 'badge-neutral'">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="4" /></svg>
+      {{ liveHub.connectionState() === 'connected' ? 'Verbunden' : liveHub.connectionState() === 'connecting' ? 'Verbinde…' : 'Getrennt' }}
+    </span>
+  </div>
 </div>
 
 @if (standingsForSelectedLeague(); as update) {
-  <div class="card">
-    <h2>{{ update.leagueName }} – Spieltag {{ update.matchday }}</h2>
+  <div class="card card-table">
+    <div class="card-header" style="padding: 1.1rem 1.3rem 0">
+      <h2>{{ update.leagueName }} — Spieltag {{ update.matchday }}</h2>
+    </div>
     <table>
       <thead>
         <tr>
@@ -35,8 +38,10 @@
     </table>
   </div>
 } @else {
-  <p class="empty-state">
-    Kein Spiel gerade live (oder außerhalb des Polling-Fensters Fr/Sa/So). Sobald der Worker ein
-    Live-Update für diese Liga sendet, erscheint es hier automatisch.
-  </p>
+  <div class="card">
+    <p class="empty-state">
+      Kein Spiel gerade live (oder außerhalb des Polling-Fensters Fr/Sa/So). Sobald der Worker ein
+      Live-Update für diese Liga sendet, erscheint es hier automatisch.
+    </p>
+  </div>
 }

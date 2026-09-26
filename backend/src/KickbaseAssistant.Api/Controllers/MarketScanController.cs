@@ -20,6 +20,8 @@ public class MarketScanController(AppDbContext dbContext) : ControllerBase
                 playerId = r.PlayerId,
                 playerName = r.Player!.Name,
                 teamId = r.Player.TeamId,
+                teamName = r.Player.TeamName,
+                position = r.Player.Position,
                 price = r.Price,
                 offerCount = r.OfferCount,
                 expiresAt = r.ExpiresAt,
@@ -27,6 +29,8 @@ public class MarketScanController(AppDbContext dbContext) : ControllerBase
                 lineupScore = r.LineupScore,
                 fixtureScore = r.FixtureScore,
                 overallScore = r.OverallScore,
+                marketValueChangeAbs = r.MarketValueChangeAbs,
+                marketValueChangePercent = r.MarketValueChangePercent,
                 scannedAt = r.ScannedAt,
             })
             .ToListAsync(ct);

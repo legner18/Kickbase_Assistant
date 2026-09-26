@@ -37,6 +37,8 @@ export interface MarketScanEntry {
   playerId: string;
   playerName: string;
   teamId: string;
+  teamName: string | null;
+  position: number;
   price: number;
   offerCount: number;
   expiresAt: string;
@@ -44,6 +46,8 @@ export interface MarketScanEntry {
   lineupScore: number;
   fixtureScore: number;
   overallScore: number;
+  marketValueChangeAbs: number | null;
+  marketValueChangePercent: number | null;
   scannedAt: string;
 }
 

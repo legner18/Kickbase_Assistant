@@ -1,6 +1,8 @@
-.status-card {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  width: fit-content;
+.hint {
+  margin: 0.15rem 0 0;
+}
+
+.badge svg {
+  width: 8px;
+  height: 8px;
 }

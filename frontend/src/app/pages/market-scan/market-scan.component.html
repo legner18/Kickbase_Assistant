@@ -1,38 +1,67 @@
-<h1>Transfermarkt-Scanner</h1>
-<p class="hint">
-  Score = Ø aus Momentum (Marktwert-Trend), Aufstellungs-Wahrscheinlichkeit und Restprogramm.
-  Höher = lohnenswerter.
-</p>
+<div class="card-header page-header">
+  <div>
+    <h1>Transfermarkt-Scanner</h1>
+    <p class="hint">Score = Ø aus Momentum, Aufstellungs-Wahrscheinlichkeit und Restprogramm — höher ist lohnenswerter.</p>
+  </div>
+  <button class="icon-btn" (click)="refresh()" title="Aktualisieren">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 12a9 9 0 1 1-2.6-6.4" /><path d="M21 4v5h-5" />
+    </svg>
+  </button>
+</div>
 
 @if (loading()) {
-  <p class="empty-state">Lädt…</p>
+  <div class="card"><div class="skeleton" style="height: 320px"></div></div>
 } @else if (entries().length === 0) {
   <p class="empty-state">Aktuell keine Spieler auf dem Markt in dieser Liga.</p>
 } @else {
-  <div class="card">
+  <div class="card card-table">
     <table>
       <thead>
         <tr>
-          <th>Spieler</th>
-          <th>Preis</th>
+          <th class="sortable" (click)="setSort('playerName')">Spieler</th>
+          <th>Team</th>
+          <th class="sortable" (click)="setSort('price')">Preis</th>
           <th>Gebote</th>
-          <th>Momentum</th>
-          <th>Aufstellung</th>
-          <th>Restprogramm</th>
-          <th>Score</th>
+          <th>Läuft ab</th>
+          <th class="sortable" (click)="setSort('marketValueChangePercent')">Marktwert-Trend</th>
+          <th>Signale</th>
+          <th class="sortable" (click)="setSort('overallScore')">Score</th>
         </tr>
       </thead>
       <tbody>
-        @for (entry of entries(); track entry.playerId) {
+        @for (entry of sorted(); track entry.playerId) {
           <tr>
             <td>{{ entry.playerName }}</td>
+            <td>{{ entry.teamName ?? entry.teamId }}</td>
             <td>{{ entry.price | number: '1.0-0' : 'de' }} €</td>
             <td>{{ entry.offerCount }}</td>
-            <td>{{ entry.momentumScore | number: '1.0-0' }}</td>
-            <td>{{ entry.lineupScore | number: '1.0-0' }}</td>
-            <td>{{ entry.fixtureScore | number: '1.0-0' }}</td>
+            <td>{{ expiresInLabel(entry.expiresAt) }}</td>
             <td>
-              <span class="badge" [class]="scoreClass(entry.overallScore)">
+              @if (entry.marketValueChangePercent !== null) {
+                <span [class]="entry.marketValueChangePercent >= 0 ? 'positive' : 'negative'">
+                  {{ entry.marketValueChangePercent >= 0 ? '+' : '' }}{{ entry.marketValueChangeAbs! | number: '1.0-0' : 'de' }} €
+                  ({{ entry.marketValueChangePercent >= 0 ? '+' : '' }}{{ entry.marketValueChangePercent | number: '1.0-1' }}%)
+                </span>
+              } @else {
+                <span class="empty-state">–</span>
+              }
+            </td>
+            <td>
+              <div class="mini-scores">
+                <span class="mini-score" title="Momentum">
+                  <span class="score-bar-track"><span class="score-bar-fill" [style.width.%]="entry.momentumScore" [style.background]="scoreColor(entry.momentumScore)"></span></span>
+                </span>
+                <span class="mini-score" title="Aufstellung">
+                  <span class="score-bar-track"><span class="score-bar-fill" [style.width.%]="entry.lineupScore" [style.background]="scoreColor(entry.lineupScore)"></span></span>
+                </span>
+                <span class="mini-score" title="Restprogramm">
+                  <span class="score-bar-track"><span class="score-bar-fill" [style.width.%]="entry.fixtureScore" [style.background]="scoreColor(entry.fixtureScore)"></span></span>
+                </span>
+              </div>
+            </td>
+            <td>
+              <span class="badge" [style.background]="scoreColor(entry.overallScore) + '26'" [style.color]="scoreColor(entry.overallScore)">
                 {{ entry.overallScore | number: '1.0-0' }}
               </span>
             </td>

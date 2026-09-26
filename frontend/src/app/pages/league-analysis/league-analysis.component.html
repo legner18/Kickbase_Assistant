@@ -1,53 +1,57 @@
-<h1>Liga-Analyse</h1>
-
-<h2>Geschätztes Budget &amp; Gebotsverhalten</h2>
-<p class="hint">
-  Budget ist eine Schätzung (Kickbase gibt nur dein eigenes echtes Budget heraus). Überzahlung
-  nur für Käufe der letzten 30 Tage berechnet.
-</p>
-
-@if (managerStats().length === 0) {
-  <p class="empty-state">Noch keine Daten.</p>
-} @else {
-  <div class="card">
-    <table>
-      <thead>
-        <tr>
-          <th>Manager</th>
-          <th>Geschätztes Budget</th>
-          <th>Ø Überzahlung</th>
-          <th>Transfers</th>
-        </tr>
-      </thead>
-      <tbody>
-        @for (stat of managerStats(); track stat.managerId) {
-          <tr>
-            <td>{{ stat.managerName }}</td>
-            <td>{{ stat.estimatedBudget | number: '1.0-0' : 'de' }} €</td>
-            <td>
-              @if (stat.averageOverpayPercent !== null) {
-                <span [class]="stat.averageOverpayPercent > 0 ? 'negative' : 'positive'">
-                  {{ stat.averageOverpayPercent >= 0 ? '+' : '' }}{{ stat.averageOverpayPercent | number: '1.0-1' }}%
-                </span>
-              } @else {
-                <span class="empty-state">–</span>
-              }
-            </td>
-            <td>{{ stat.transferCount }}</td>
-          </tr>
-        }
-      </tbody>
-    </table>
+<div class="card-header page-header">
+  <div>
+    <h1>Liga-Analyse</h1>
+    <p class="hint">{{ leagueContext.selectedLeague()?.name }} · Budget ist eine Schätzung, Kickbase gibt nur dein eigenes echtes Budget heraus.</p>
   </div>
-}
+  <button class="icon-btn" (click)="refresh()" title="Aktualisieren">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 12a9 9 0 1 1-2.6-6.4" /><path d="M21 4v5h-5" />
+    </svg>
+  </button>
+</div>
 
-<h2>Letzte Transfers</h2>
-@if (loading()) {
-  <p class="empty-state">Lädt…</p>
-} @else if (transfers().length === 0) {
-  <p class="empty-state">Noch keine Transfers erfasst.</p>
-} @else {
-  <div class="card">
+<div class="card">
+  <div class="card-header">
+    <h2>Geschätztes Budget &amp; Gebotsverhalten</h2>
+  </div>
+
+  @if (managerStats().length === 0) {
+    <p class="empty-state">Noch keine Daten.</p>
+  } @else {
+    <div class="budget-rows">
+      @for (stat of sortedStats(); track stat.managerId) {
+        <div class="budget-row">
+          <div class="budget-name">{{ stat.managerName }}</div>
+          <div class="budget-track">
+            <div class="budget-zero" [style.left.%]="zeroPct()"></div>
+            <div class="budget-fill" [ngStyle]="barStyle(stat.estimatedBudget)"></div>
+          </div>
+          <div class="budget-value" [class.negative]="stat.estimatedBudget < 0">{{ stat.estimatedBudget | number: '1.0-0' : 'de' }} €</div>
+          <div class="budget-overpay">
+            @if (stat.averageOverpayPercent !== null) {
+              <span class="badge" [class]="overpayClass(stat.averageOverpayPercent)">
+                {{ stat.averageOverpayPercent >= 0 ? '+' : '' }}{{ stat.averageOverpayPercent | number: '1.0-1' }}% Ø
+              </span>
+            } @else {
+              <span class="badge badge-neutral">k. A.</span>
+            }
+          </div>
+          <div class="budget-count">{{ stat.transferCount }} Transfers</div>
+        </div>
+      }
+    </div>
+  }
+</div>
+
+<div class="card card-table">
+  <div class="card-header" style="padding: 1.1rem 1.3rem 0">
+    <h2>Letzte Transfers</h2>
+  </div>
+  @if (loading()) {
+    <div class="skeleton" style="height: 200px; margin: 1rem 1.3rem"></div>
+  } @else if (transfers().length === 0) {
+    <p class="empty-state">Noch keine Transfers erfasst.</p>
+  } @else {
     <table>
       <thead>
         <tr>
@@ -64,7 +68,7 @@
             <td>{{ transfer.occurredAt | date: 'dd.MM.yyyy' }}</td>
             <td>{{ transfer.managerName }}</td>
             <td>
-              <span class="badge" [class]="transfer.type === 'Buy' ? 'badge-ok' : 'badge-neutral'">
+              <span class="badge" [class]="transfer.type === 'Buy' ? 'badge-good' : 'badge-neutral'">
                 {{ transfer.type === 'Buy' ? 'Kauf' : 'Verkauf' }}
               </span>
             </td>
@@ -74,5 +78,5 @@
         }
       </tbody>
     </table>
-  </div>
-}
+  }
+</div>

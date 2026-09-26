@@ -1,33 +1,45 @@
-<h1>Mein Kader</h1>
-<p class="hint">
-  Zeigt alle Spieler, die aktuell in mindestens einem deiner Kader stehen (ligenübergreifend
-  zusammengefasst).
-</p>
+<div class="card-header page-header">
+  <div>
+    <h1>Mein Kader</h1>
+    <p class="hint">{{ leagueContext.selectedLeague()?.name }} · {{ players().length }} Spieler · Gesamtwert {{ totalValue() | number: '1.0-0' : 'de' }} €</p>
+  </div>
+  <div class="toolbar">
+    <input type="search" placeholder="Suchen…" [value]="search()" (input)="search.set($any($event.target).value)" />
+    <button class="icon-btn" (click)="refresh()" title="Aktualisieren">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 12a9 9 0 1 1-2.6-6.4" /><path d="M21 4v5h-5" />
+      </svg>
+    </button>
+  </div>
+</div>
 
 @if (loading()) {
-  <p class="empty-state">Lädt…</p>
+  <div class="card"><div class="skeleton" style="height: 320px"></div></div>
 } @else if (players().length === 0) {
-  <p class="empty-state">Noch keine Kaderdaten vorhanden.</p>
+  <p class="empty-state">Noch keine Kaderdaten für diese Liga vorhanden.</p>
 } @else {
-  <div class="card">
+  <div class="card card-table">
     <table>
       <thead>
         <tr>
-          <th>Spieler</th>
-          <th>Pos</th>
+          <th class="sortable" (click)="setSort('name')">Spieler</th>
+          <th class="sortable" (click)="setSort('position')">Pos</th>
           <th>Team</th>
-          <th>Marktwert</th>
-          <th>Tendenz</th>
+          <th class="sortable" (click)="setSort('marketValue')">Marktwert</th>
+          <th>Verlauf (21 Tage)</th>
+          <th class="sortable" (click)="setSort('change')">Tendenz</th>
+          <th class="sortable" (click)="setSort('totalPoints')">Punkte</th>
           <th>Aufstellung</th>
         </tr>
       </thead>
       <tbody>
-        @for (player of players(); track player.id) {
+        @for (player of filteredSorted(); track player.id) {
           <tr>
             <td>{{ player.name }}</td>
             <td>{{ positionLabels[player.position] ?? '–' }}</td>
             <td>{{ player.teamName ?? player.teamId }}</td>
             <td>{{ player.marketValue | number: '1.0-0' : 'de' }} €</td>
+            <td><app-sparkline [values]="history()[player.id] ?? []" /></td>
             <td>
               @if (player.latestMarketValueChange !== null) {
                 <span [class]="player.latestMarketValueChange >= 0 ? 'positive' : 'negative'">
@@ -37,6 +49,7 @@
                 <span class="empty-state">–</span>
               }
             </td>
+            <td>{{ player.totalPoints }}</td>
             <td>
               <span class="badge" [class]="lineupBadgeClass(player.latestLineupStatus)">
                 {{ player.latestLineupStatus ? (lineupLabels[player.latestLineupStatus] ?? player.latestLineupStatus) : 'Unbekannt' }}
