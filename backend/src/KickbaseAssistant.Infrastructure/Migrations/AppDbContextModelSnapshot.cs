@@ -62,6 +62,9 @@ namespace KickbaseAssistant.Infrastructure.Migrations
                     b.Property<double?>("AverageOverpayPercent")
                         .HasColumnType("double precision");
 
+                    b.Property<int>("CurrentMatchday")
+                        .HasColumnType("integer");
+
                     b.Property<double>("EstimatedBudget")
                         .HasColumnType("double precision");
 
@@ -79,6 +82,18 @@ namespace KickbaseAssistant.Infrastructure.Migrations
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
+
+                    b.Property<int>("MatchdayPoints")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("MatchdayRank")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("SeasonPoints")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("SeasonRank")
+                        .HasColumnType("integer");
 
                     b.Property<int>("TransferCount")
                         .HasColumnType("integer");
@@ -321,6 +336,9 @@ namespace KickbaseAssistant.Infrastructure.Migrations
                     b.Property<string>("Id")
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
+
+                    b.Property<int>("AveragePoints")
+                        .HasColumnType("integer");
 
                     b.Property<int>("CompetitionId")
                         .HasColumnType("integer");

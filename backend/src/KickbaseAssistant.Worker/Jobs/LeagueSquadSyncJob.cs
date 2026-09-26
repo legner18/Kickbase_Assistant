@@ -130,6 +130,7 @@ public class LeagueSquadSyncJob(
                 player.Position = remotePlayer.Position;
                 player.MarketValue = remotePlayer.MarketValue;
                 player.TotalPoints = remotePlayer.TotalPoints;
+                player.AveragePoints = remotePlayer.AveragePoints;
                 player.CompetitionId = competitionId;
                 player.LastSeenAt = DateTimeOffset.UtcNow;
 

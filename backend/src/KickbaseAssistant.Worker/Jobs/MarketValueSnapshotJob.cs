@@ -124,6 +124,8 @@ public class MarketValueSnapshotJob(
                 player.TeamName = teamNames.GetValueOrDefault(remotePlayer.TeamId, player.TeamName);
                 player.Position = remotePlayer.Position;
                 player.MarketValue = remotePlayer.MarketValue;
+                player.TotalPoints = remotePlayer.TotalPoints;
+                player.AveragePoints = remotePlayer.AveragePoints;
                 player.CompetitionId = competitionId;
                 player.IsInSquad = true;
                 player.LastSeenAt = DateTimeOffset.UtcNow;

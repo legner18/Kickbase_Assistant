@@ -10,7 +10,9 @@ import {
   MarketScanEntry,
   MarketValueHistoryPoint,
   Player,
+  PlayerComparables,
   PlayerDetail,
+  PlayerSearchResult,
   SellAlert,
 } from './models';
 
@@ -34,6 +36,14 @@ export class ApiService {
 
   getPlayerDetail(playerId: string): Observable<PlayerDetail> {
     return this.http.get<PlayerDetail>(`${this.base}/api/players/${playerId}`);
+  }
+
+  searchPlayers(query: string): Observable<PlayerSearchResult[]> {
+    return this.http.get<PlayerSearchResult[]>(`${this.base}/api/players/search?q=${encodeURIComponent(query)}`);
+  }
+
+  getPlayerComparables(playerId: string): Observable<PlayerComparables> {
+    return this.http.get<PlayerComparables>(`${this.base}/api/players/${playerId}/comparables`);
   }
 
   getMarketValueHistory(playerId: string): Observable<MarketValueHistoryPoint[]> {

@@ -19,9 +19,32 @@ export interface Player {
   position: number;
   marketValue: number;
   totalPoints: number;
+  averagePoints: number;
   lastSeenAt: string;
   latestLineupStatus: string | null;
   latestMarketValueChange: number | null;
+}
+
+export interface PlayerSearchResult {
+  id: string;
+  name: string;
+  teamName: string | null;
+  position: number;
+  marketValue: number;
+  totalPoints: number;
+}
+
+export interface ComparablePlayer {
+  id: string;
+  name: string;
+  teamName: string | null;
+  marketValue: number;
+  totalPoints: number;
+}
+
+export interface PlayerComparables {
+  similarByValue: ComparablePlayer[];
+  similarByPoints: ComparablePlayer[];
 }
 
 export interface MarketValueHistoryPoint {
@@ -86,6 +109,7 @@ export interface PlayerDetail {
   position: number;
   marketValue: number;
   totalPoints: number;
+  averagePoints: number;
   lastSeenAt: string;
   lineupHistory: LineupHistoryEntry[];
   sellAlerts: PlayerSellAlert[];
@@ -100,6 +124,11 @@ export interface ManagerStat {
   estimatedBudget: number;
   averageOverpayPercent: number | null;
   transferCount: number;
+  seasonPoints: number;
+  matchdayPoints: number;
+  seasonRank: number;
+  matchdayRank: number;
+  currentMatchday: number;
   updatedAt: string;
 }
 

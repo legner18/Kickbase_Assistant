@@ -1,8 +1,15 @@
 import { DatePipe, DecimalPipe } from '@angular/common';
 import { Component, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { ApiService } from '../../core/api.service';
-import { LINEUP_STATUS_LABELS, MarketValueHistoryPoint, POSITION_LABELS, PlayerDetail } from '../../core/models';
+import {
+  LINEUP_STATUS_LABELS,
+  MarketValueHistoryPoint,
+  PlayerComparables,
+  POSITION_LABELS,
+  PlayerDetail,
+} from '../../core/models';
 import { ValueChartComponent } from '../../shared/value-chart/value-chart.component';
 
 const SIGNAL_LABELS: Record<string, string> = {
@@ -23,6 +30,7 @@ export class PlayerDetailComponent {
 
   readonly player = signal<PlayerDetail | null>(null);
   readonly history = signal<MarketValueHistoryPoint[]>([]);
+  readonly comparables = signal<PlayerComparables | null>(null);
   readonly loading = signal(true);
 
   readonly positionLabels = POSITION_LABELS;
@@ -30,17 +38,24 @@ export class PlayerDetailComponent {
   readonly signalLabels = SIGNAL_LABELS;
 
   constructor() {
-    const id = this.route.snapshot.paramMap.get('id')!;
-    this.load(id);
+    this.route.paramMap.pipe(takeUntilDestroyed()).subscribe((params) => {
+      const id = params.get('id');
+      if (id) {
+        this.load(id);
+      }
+    });
   }
 
   load(id: string): void {
     this.loading.set(true);
+    this.player.set(null);
+    this.comparables.set(null);
     this.api.getPlayerDetail(id).subscribe((detail) => {
       this.player.set(detail);
       this.loading.set(false);
     });
     this.api.getMarketValueHistory(id).subscribe((history) => this.history.set(history));
+    this.api.getPlayerComparables(id).subscribe((comparables) => this.comparables.set(comparables));
   }
 
   lineupBadgeClass(status: string): string {

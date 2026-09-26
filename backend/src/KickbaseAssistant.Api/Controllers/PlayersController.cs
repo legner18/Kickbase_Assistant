@@ -35,6 +35,7 @@ public class PlayersController(AppDbContext dbContext) : ControllerBase
                 position = p.Position,
                 marketValue = p.MarketValue,
                 totalPoints = p.TotalPoints,
+                averagePoints = p.AveragePoints,
                 lastSeenAt = p.LastSeenAt,
                 latestLineupStatus = dbContext.LineupPredictions
                     .Where(l => l.PlayerId == p.Id)
@@ -50,6 +51,60 @@ public class PlayersController(AppDbContext dbContext) : ControllerBase
             .ToListAsync(ct);
 
         return Ok(players);
+    }
+
+    [HttpGet("players/search")]
+    public async Task<ActionResult> Search([FromQuery] string q, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(q) || q.Trim().Length < 2)
+        {
+            return Ok(Array.Empty<object>());
+        }
+
+        var term = q.Trim();
+        var results = await dbContext.Players
+            .Where(p => EF.Functions.ILike(p.Name, $"%{term}%"))
+            .OrderByDescending(p => EF.Functions.ILike(p.Name, $"{term}%"))
+            .ThenBy(p => p.Name)
+            .Take(20)
+            .Select(p => new
+            {
+                id = p.Id,
+                name = p.Name,
+                teamName = p.TeamName,
+                position = p.Position,
+                marketValue = p.MarketValue,
+                totalPoints = p.TotalPoints,
+            })
+            .ToListAsync(ct);
+
+        return Ok(results);
+    }
+
+    [HttpGet("players/{id}/comparables")]
+    public async Task<ActionResult> GetComparables(string id, CancellationToken ct)
+    {
+        var player = await dbContext.Players.FindAsync([id], ct);
+        if (player is null)
+        {
+            return NotFound();
+        }
+
+        var samePosition = dbContext.Players.Where(p => p.Position == player.Position && p.Id != id);
+
+        var similarByValue = await samePosition
+            .OrderBy(p => Math.Abs(p.MarketValue - player.MarketValue))
+            .Take(5)
+            .Select(p => new { id = p.Id, name = p.Name, teamName = p.TeamName, marketValue = p.MarketValue, totalPoints = p.TotalPoints })
+            .ToListAsync(ct);
+
+        var similarByPoints = await samePosition
+            .OrderBy(p => Math.Abs(p.TotalPoints - player.TotalPoints))
+            .Take(5)
+            .Select(p => new { id = p.Id, name = p.Name, teamName = p.TeamName, marketValue = p.MarketValue, totalPoints = p.TotalPoints })
+            .ToListAsync(ct);
+
+        return Ok(new { similarByValue, similarByPoints });
     }
 
     [HttpGet("players/{id}")]
@@ -88,6 +143,7 @@ public class PlayersController(AppDbContext dbContext) : ControllerBase
             position = player.Position,
             marketValue = player.MarketValue,
             totalPoints = player.TotalPoints,
+            averagePoints = player.AveragePoints,
             lastSeenAt = player.LastSeenAt,
             lineupHistory,
             sellAlerts,

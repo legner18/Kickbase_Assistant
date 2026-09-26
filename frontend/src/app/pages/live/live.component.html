@@ -37,11 +37,42 @@
       </tbody>
     </table>
   </div>
+} @else if (fallbackSorted().length > 0) {
+  <div class="card card-table">
+    <div class="card-header" style="padding: 1.1rem 1.3rem 0">
+      <h2>Letzter bekannter Stand — Spieltag {{ fallbackSorted()[0].currentMatchday }}</h2>
+      <span class="badge badge-neutral">Nicht live</span>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Manager</th>
+          <th>Spieltag-Punkte</th>
+          <th>Saison-Punkte</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (stat of fallbackSorted(); track stat.managerId) {
+          <tr>
+            <td>{{ stat.matchdayRank }}</td>
+            <td>{{ stat.managerName }}</td>
+            <td>{{ stat.matchdayPoints | number: '1.0-0' }}</td>
+            <td>{{ stat.seasonPoints | number: '1.0-0' }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+    <p class="hint" style="padding: 0 1.3rem 1.1rem">
+      Kein Spiel gerade live (oder außerhalb des Polling-Fensters Fr/Sa/So) - das ist der Stand vom letzten
+      täglichen Abgleich, keine Echtzeit-Daten.
+    </p>
+  </div>
 } @else {
   <div class="card">
     <p class="empty-state">
-      Kein Spiel gerade live (oder außerhalb des Polling-Fensters Fr/Sa/So). Sobald der Worker ein
-      Live-Update für diese Liga sendet, erscheint es hier automatisch.
+      Noch keine Daten für diese Liga. Sobald der Worker einmal gelaufen ist, erscheint hier der letzte
+      bekannte Stand, und während eines laufenden Spiels automatisch die Live-Daten.
     </p>
   </div>
 }

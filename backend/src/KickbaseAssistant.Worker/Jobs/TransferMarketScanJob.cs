@@ -149,6 +149,7 @@ public class TransferMarketScanJob(
         player.Position = marketPlayer.Position;
         player.MarketValue = marketPlayer.MarketValue;
         player.TotalPoints = marketPlayer.TotalPoints;
+        player.AveragePoints = marketPlayer.AveragePoints;
         player.LastSeenAt = DateTimeOffset.UtcNow;
         // IsInSquad bleibt unangetastet - ein Marktangebot ist keine Kader-Mitgliedschaft.
     }

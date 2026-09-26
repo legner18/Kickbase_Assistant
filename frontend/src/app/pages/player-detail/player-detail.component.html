@@ -25,6 +25,12 @@
     </div>
     <div class="card stat-card">
       <div>
+        <div class="stat-label">Punkte/Spiel (Ø)</div>
+        <div class="stat">{{ p.averagePoints }}</div>
+      </div>
+    </div>
+    <div class="card stat-card">
+      <div>
         <div class="stat-label">Trend (gespeicherte Historie)</div>
         @if (totalChangePercent() !== null) {
           <div class="stat" [class.positive]="totalChangePercent()! >= 0" [class.negative]="totalChangePercent()! < 0">
@@ -41,6 +47,40 @@
     <div class="card-header"><h2>Marktwert-Verlauf</h2></div>
     <app-value-chart [points]="history()" />
   </div>
+
+  @if (comparables()) {
+    @let c = comparables()!;
+    <div class="two-col">
+      <div class="card">
+        <div class="card-header"><h2>Ähnlich im Marktwert</h2></div>
+        @if (c.similarByValue.length === 0) {
+          <p class="empty-state">Keine vergleichbaren Spieler auf dieser Position.</p>
+        } @else {
+          @for (other of c.similarByValue; track other.id) {
+            <a class="compare-row" [routerLink]="['/spieler', other.id]">
+              <span class="compare-name">{{ other.name }}</span>
+              <span class="compare-meta">{{ other.teamName ?? '–' }}</span>
+              <span class="compare-value">{{ other.marketValue | number: '1.0-0' : 'de' }} €</span>
+            </a>
+          }
+        }
+      </div>
+      <div class="card">
+        <div class="card-header"><h2>Ähnlich in Punkten</h2></div>
+        @if (c.similarByPoints.length === 0) {
+          <p class="empty-state">Keine vergleichbaren Spieler auf dieser Position.</p>
+        } @else {
+          @for (other of c.similarByPoints; track other.id) {
+            <a class="compare-row" [routerLink]="['/spieler', other.id]">
+              <span class="compare-name">{{ other.name }}</span>
+              <span class="compare-meta">{{ other.teamName ?? '–' }}</span>
+              <span class="compare-value">{{ other.totalPoints }} Pkt.</span>
+            </a>
+          }
+        }
+      </div>
+    </div>
+  }
 
   @if (p.owners.length > 0) {
     <div class="card">

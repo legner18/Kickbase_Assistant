@@ -10,6 +10,7 @@ public class Player
     public int CompetitionId { get; set; }
     public int MarketValue { get; set; }
     public int TotalPoints { get; set; }
+    public int AveragePoints { get; set; }
     public bool IsInSquad { get; set; }
     public DateTimeOffset LastSeenAt { get; set; }
 

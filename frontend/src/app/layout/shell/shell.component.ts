@@ -2,10 +2,11 @@ import { Component, OnInit, inject } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { LeagueContextService } from '../../core/league-context.service';
 import { ThemeService } from '../../core/theme.service';
+import { PlayerSearchComponent } from '../../shared/player-search/player-search.component';
 
 @Component({
   selector: 'app-shell',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, PlayerSearchComponent],
   templateUrl: './shell.component.html',
   styleUrl: './shell.component.css',
 })

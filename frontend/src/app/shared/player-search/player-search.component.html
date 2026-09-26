@@ -1,0 +1,33 @@
+<div class="search-box">
+  <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="11" cy="11" r="7" /><path d="m21 21-4.3-4.3" />
+  </svg>
+  <input
+    type="text"
+    placeholder="Spieler suchen…"
+    [value]="query()"
+    (input)="onInput($any($event.target).value)"
+    (focus)="results().length > 0 && open.set(true)"
+    (blur)="onBlur()"
+  />
+
+  @if (open()) {
+    <div class="search-results">
+      @if (results().length === 0) {
+        <div class="search-empty">Keine Treffer.</div>
+      } @else {
+        @for (r of results(); track r.id) {
+          <div class="search-result" (mousedown)="select(r.id)">
+            <div class="search-result-main">
+              <span class="search-result-name">{{ r.name }}</span>
+              <span class="search-result-meta">{{ positionLabels[r.position] ?? '–' }} · {{ r.teamName ?? '–' }}</span>
+            </div>
+            <div class="search-result-stats">
+              <span>{{ r.totalPoints }} Pkt.</span>
+            </div>
+          </div>
+        }
+      }
+    </div>
+  }
+</div>

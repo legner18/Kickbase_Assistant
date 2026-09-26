@@ -72,7 +72,7 @@ public class LeagueAnalysisJob(
                     continue;
                 }
 
-                await ProcessManagerAsync(league, user.UserId, user.Name, transfers, startingBudget, ct);
+                await ProcessManagerAsync(league, user, transfers, startingBudget, ranking.CurrentMatchday, ct);
                 managersProcessed++;
             }
         }
@@ -86,12 +86,15 @@ public class LeagueAnalysisJob(
 
     private async Task ProcessManagerAsync(
         League league,
-        string managerId,
-        string managerName,
+        KickbaseRankingUserDto rankingUser,
         KickbaseManagerTransfersResponseDto transfers,
         double startingBudget,
+        int currentMatchday,
         CancellationToken ct)
     {
+        var managerId = rankingUser.UserId;
+        var managerName = rankingUser.Name;
+
         var existingForManager = await dbContext.LeagueTransfers
             .Where(x => x.ManagerId == managerId)
             .ToListAsync(ct);
@@ -164,6 +167,11 @@ public class LeagueAnalysisJob(
             stat.AverageOverpayPercent = overpayPercents.Average();
         }
         stat.TransferCount = transfers.Transfers.Count;
+        stat.SeasonPoints = rankingUser.SeasonPoints;
+        stat.MatchdayPoints = rankingUser.MatchdayPoints;
+        stat.SeasonRank = rankingUser.SeasonRank;
+        stat.MatchdayRank = rankingUser.MatchdayRank;
+        stat.CurrentMatchday = currentMatchday;
         stat.UpdatedAt = DateTimeOffset.UtcNow;
     }
 
