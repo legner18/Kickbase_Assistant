@@ -65,7 +65,7 @@
       <tbody>
         @for (transfer of transfers(); track transfer.id) {
           <tr>
-            <td>{{ transfer.occurredAt | date: 'dd.MM.yyyy' }}</td>
+            <td>{{ transfer.occurredAt | date: 'dd.MM.yyyy HH:mm' }}</td>
             <td>{{ transfer.managerName }}</td>
             <td>
               <span class="badge" [class]="transfer.type === 'Buy' ? 'badge-good' : 'badge-neutral'">

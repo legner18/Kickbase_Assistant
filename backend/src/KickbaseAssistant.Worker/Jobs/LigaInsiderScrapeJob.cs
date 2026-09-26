@@ -41,8 +41,15 @@ public class LigaInsiderScrapeJob(
         var teamNamesByCompetition = new Dictionary<string, Dictionary<string, string>>();
         foreach (var competitionId in competitionIds)
         {
-            var table = await kickbaseApiClient.GetCompetitionTableAsync(competitionId, ct);
-            teamNamesByCompetition[competitionId] = table.ToDictionary(t => t.Id, t => t.Name);
+            try
+            {
+                var table = await kickbaseApiClient.GetCompetitionTableAsync(competitionId, ct);
+                teamNamesByCompetition[competitionId] = table.ToDictionary(t => t.Id, t => t.Name);
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "LigaInsider: Liga-Tabelle für Competition {CompetitionId} konnte nicht geladen werden.", competitionId);
+            }
         }
 
         var changedPlayers = new List<(Player Player, LineupStatus NewStatus, string? RawLabel)>();

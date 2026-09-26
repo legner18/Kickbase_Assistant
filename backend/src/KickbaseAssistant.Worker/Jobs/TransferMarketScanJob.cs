@@ -62,23 +62,35 @@ public class TransferMarketScanJob(
                 continue;
             }
 
-            if (!placementsByCompetition.TryGetValue(league.CompetitionId, out var placements)
-                || !teamNamesByCompetition.TryGetValue(league.CompetitionId, out var teamNames))
+            Dictionary<string, int> placements;
+            Dictionary<string, string> teamNames;
+            IReadOnlyList<KickbaseMatchdayDto> matchdays;
+            int currentMatchday;
+            try
             {
-                var table = await kickbaseApiClient.GetCompetitionTableAsync(league.CompetitionId, ct);
-                placements = table.ToDictionary(t => t.Id, t => t.CurrentPlacement);
-                teamNames = table.ToDictionary(t => t.Id, t => t.Name);
-                placementsByCompetition[league.CompetitionId] = placements;
-                teamNamesByCompetition[league.CompetitionId] = teamNames;
-            }
+                if (!placementsByCompetition.TryGetValue(league.CompetitionId, out placements!)
+                    || !teamNamesByCompetition.TryGetValue(league.CompetitionId, out teamNames!))
+                {
+                    var table = await kickbaseApiClient.GetCompetitionTableAsync(league.CompetitionId, ct);
+                    placements = table.ToDictionary(t => t.Id, t => t.CurrentPlacement);
+                    teamNames = table.ToDictionary(t => t.Id, t => t.Name);
+                    placementsByCompetition[league.CompetitionId] = placements;
+                    teamNamesByCompetition[league.CompetitionId] = teamNames;
+                }
 
-            if (!matchdaysByCompetition.TryGetValue(league.CompetitionId, out var matchdays))
+                if (!matchdaysByCompetition.TryGetValue(league.CompetitionId, out matchdays!))
+                {
+                    matchdays = await kickbaseApiClient.GetMatchdaysAsync(league.CompetitionId, ct);
+                    matchdaysByCompetition[league.CompetitionId] = matchdays;
+                }
+
+                currentMatchday = (await kickbaseApiClient.GetRankingAsync(league.Id, ct)).CurrentMatchday;
+            }
+            catch (Exception ex)
             {
-                matchdays = await kickbaseApiClient.GetMatchdaysAsync(league.CompetitionId, ct);
-                matchdaysByCompetition[league.CompetitionId] = matchdays;
+                logger.LogWarning(ex, "Transfermarkt-Scan: Tabellen-/Spieltag-Daten für Liga {LeagueName} konnten nicht geladen werden.", league.Name);
+                continue;
             }
-
-            var currentMatchday = (await kickbaseApiClient.GetRankingAsync(league.Id, ct)).CurrentMatchday;
 
             foreach (var marketPlayer in marketPlayers)
             {

@@ -80,7 +80,7 @@
   } @else {
     @for (t of transfers(); track t.id) {
       <div class="mover-row">
-        <span>{{ t.occurredAt | date: 'dd.MM.' }} · {{ t.managerName }} {{ t.type === 'Buy' ? 'kauft' : 'verkauft' }} {{ t.playerName }}</span>
+        <span>{{ t.occurredAt | date: 'dd.MM. HH:mm' }} · {{ t.managerName }} {{ t.type === 'Buy' ? 'kauft' : 'verkauft' }} {{ t.playerName }}</span>
         <span>{{ t.price | number: '1.0-0' : 'de' }} €</span>
       </div>
     }
