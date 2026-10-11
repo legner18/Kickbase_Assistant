@@ -59,9 +59,45 @@ public class KickbaseApiClient(IHttpClientFactory httpClientFactory)
     public Task<KickbaseBudgetDto> GetMyBudgetAsync(string leagueId, CancellationToken ct = default) =>
         GetAsync<KickbaseBudgetDto>($"/v4/leagues/{leagueId}/me/budget", ct);
 
-    public Task<KickbaseManagerTransfersResponseDto> GetManagerTransfersAsync(
-        string leagueId, string managerId, CancellationToken ct = default) =>
-        GetAsync<KickbaseManagerTransfersResponseDto>($"/v4/leagues/{leagueId}/managers/{managerId}/transfer", ct);
+    /// <summary>
+    /// Paginiert vollständig durch - live verifiziert am 2026-10-11: die Antwort hat kein
+    /// Gesamtzahl-/hasMore-Feld, aber "start" als Offset-Parameter funktioniert (im Gegensatz zu
+    /// "offset"/"page"/"skip"/"from", die alle still ignoriert werden und wieder Seite 1 liefern).
+    /// Seitengröße 25, erkannt am ersten Rückgabe-Batch mit weniger als 25 Einträgen. Ohne diese
+    /// Paginierung lieferte der Aufruf bei einem Manager mit 66 echten Transfers nur die neuesten 25.
+    /// </summary>
+    public async Task<KickbaseManagerTransfersResponseDto> GetManagerTransfersAsync(
+        string leagueId, string managerId, CancellationToken ct = default)
+    {
+        const int PageSize = 25;
+        const int MaxPages = 40; // Sicherheitsgrenze (1000 Transfers) gegen eine Endlosschleife bei unerwartetem API-Verhalten.
+
+        var allTransfers = new List<KickbaseManagerTransferDto>();
+        string? managerName = null;
+        var start = 0;
+
+        for (var page = 0; page < MaxPages; page++)
+        {
+            var response = await GetAsync<KickbaseManagerTransfersResponseDto>(
+                $"/v4/leagues/{leagueId}/managers/{managerId}/transfer?start={start}", ct);
+            managerName ??= response.ManagerName;
+            allTransfers.AddRange(response.Transfers);
+
+            if (response.Transfers.Count < PageSize)
+            {
+                break;
+            }
+
+            start += PageSize;
+        }
+
+        return new KickbaseManagerTransfersResponseDto
+        {
+            ManagerId = managerId,
+            ManagerName = managerName ?? "",
+            Transfers = allTransfers,
+        };
+    }
 
     public async Task<IReadOnlyList<KickbaseManagerSquadPlayerDto>> GetManagerSquadAsync(
         string leagueId, string managerId, CancellationToken ct = default) =>
