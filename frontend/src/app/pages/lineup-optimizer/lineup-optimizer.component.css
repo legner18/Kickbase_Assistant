@@ -1,0 +1,42 @@
+.hint {
+  margin: 0.15rem 0 0;
+  max-width: 70ch;
+}
+
+.lineup-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.65rem 1.3rem;
+  border-top: 1px solid var(--border);
+  cursor: pointer;
+}
+
+.lineup-row:first-of-type {
+  border-top: none;
+}
+
+.lineup-row:hover {
+  background: var(--surface-hover);
+}
+
+.lineup-name {
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.lineup-meta {
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  flex: 1;
+  text-align: right;
+}
+
+.lineup-weighted {
+  font-weight: 700;
+  min-width: 3.5rem;
+  text-align: right;
+}

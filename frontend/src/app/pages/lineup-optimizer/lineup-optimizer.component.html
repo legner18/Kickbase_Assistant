@@ -1,0 +1,70 @@
+<div class="card-header page-header">
+  <div>
+    <h1>Aufstellungs-Optimierer</h1>
+    <p class="hint">
+      Erwartete Punkte = Ø Punkte der letzten 5 Spiele × Startwahrscheinlichkeit (LigaInsider). Rechnet alle
+      Standard-Formationen durch und schlägt die beste vor - keine automatische Aufstellung.
+    </p>
+  </div>
+  <button class="icon-btn" (click)="refresh()" title="Aktualisieren">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 12a9 9 0 1 1-2.6-6.4" /><path d="M21 4v5h-5" />
+    </svg>
+  </button>
+</div>
+
+@if (loading()) {
+  <div class="card"><div class="skeleton" style="height: 240px"></div></div>
+} @else if (result()) {
+  @let r = result()!;
+
+  @if (r.formation === null) {
+    <p class="empty-state">
+      @if (r.unfillablePositions.length > 0) {
+        Keine Elf aufstellbar - fehlende Mindestbesetzung: {{ r.unfillablePositions.join(', ') }}.
+      } @else if (r.missingPlayers && r.missingPlayers.length > 0) {
+        Keine Standard-Formation möglich. Am nächsten: {{ r.closestFormation }}, es fehlen noch
+        {{ missingPlayersLabel(r.missingPlayers) }}.
+      } @else {
+        Keine Elf aufstellbar.
+      }
+    </p>
+  } @else {
+    <div class="card-grid">
+      <div class="card stat-card">
+        <div>
+          <div class="stat-label">Formation</div>
+          <div class="stat">{{ r.formation }}</div>
+        </div>
+      </div>
+      <div class="card stat-card">
+        <div>
+          <div class="stat-label">Erwartete Punkte (gewichtet)</div>
+          <div class="stat">{{ r.totalExpectedPoints | number: '1.0-1' }}</div>
+        </div>
+      </div>
+    </div>
+
+    @for (group of playersByPosition(); track group.position) {
+      <div class="card">
+        <div class="card-header"><h2>{{ group.label }}</h2></div>
+        @for (player of group.players; track player.playerId) {
+          <div class="lineup-row" (click)="openPlayer(player.playerId)">
+            <span class="lineup-name">
+              {{ player.playerName }}
+              @if (player.injured) {
+                <span class="badge badge-critical">Verletzt</span>
+              }
+            </span>
+            <span class="lineup-meta">
+              Ø {{ player.expectedPoints | number: '1.0-1' }} Pkt. · {{ player.startProbability | percent }} Start-Wkt.
+            </span>
+            <span class="lineup-weighted">{{ player.weightedPoints | number: '1.0-1' }}</span>
+          </div>
+        }
+      </div>
+    }
+  }
+} @else {
+  <p class="empty-state">Keine Kader-Daten für diese Liga.</p>
+}

@@ -7,6 +7,7 @@ import {
   LeagueBalanceStatus,
   LeagueManager,
   LeagueTransfer,
+  LineupOptimizerResult,
   ManagerStat,
   MarketScanEntry,
   MarketValueHistoryPoint,
@@ -46,6 +47,10 @@ export class ApiService {
 
   toggleSellLock(leagueId: string, playerId: string): Observable<{ locked: boolean }> {
     return this.http.post<{ locked: boolean }>(`${this.base}/api/leagues/${leagueId}/sell-plan/lock/${playerId}`, {});
+  }
+
+  getLineupOptimizer(leagueId: string): Observable<LineupOptimizerResult> {
+    return this.http.get<LineupOptimizerResult>(`${this.base}/api/leagues/${leagueId}/lineup-optimizer`);
   }
 
   getSquad(leagueId: string, managerId?: string): Observable<Player[]> {

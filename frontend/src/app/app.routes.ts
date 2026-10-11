@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 import { ArchivedLeaguesComponent } from './pages/archived-leagues/archived-leagues.component';
 import { DashboardComponent } from './pages/dashboard/dashboard.component';
 import { LeagueAnalysisComponent } from './pages/league-analysis/league-analysis.component';
+import { LineupOptimizerComponent } from './pages/lineup-optimizer/lineup-optimizer.component';
 import { LiveComponent } from './pages/live/live.component';
 import { MarketScanComponent } from './pages/market-scan/market-scan.component';
 import { PlayerDetailComponent } from './pages/player-detail/player-detail.component';
@@ -15,6 +16,7 @@ export const routes: Routes = [
   { path: 'kader', component: SquadComponent },
   { path: 'verkaufs-alarm', component: SellAlertsComponent },
   { path: 'verkaufsplaner', component: SellPlanComponent },
+  { path: 'aufstellung', component: LineupOptimizerComponent },
   { path: 'transfermarkt', component: MarketScanComponent },
   { path: 'liga-analyse', component: LeagueAnalysisComponent },
   { path: 'live', component: LiveComponent },

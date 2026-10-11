@@ -15,7 +15,8 @@
 
 @if (loading()) {
   <div class="card"><div class="skeleton" style="height: 240px"></div></div>
-} @else if (plan(); as p) {
+} @else if (plan()) {
+  @let p = plan()!;
   <div class="card-grid">
     <div class="card stat-card">
       <div>

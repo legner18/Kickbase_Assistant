@@ -40,6 +40,30 @@ export interface SellPlan {
   combinations: SellPlanCombination[];
 }
 
+export interface LineupPlayer {
+  playerId: string;
+  playerName: string;
+  position: number;
+  expectedPoints: number;
+  startProbability: number;
+  weightedPoints: number;
+  injured: boolean;
+}
+
+export interface MissingPlayer {
+  position: string;
+  count: number;
+}
+
+export interface LineupOptimizerResult {
+  formation: string | null;
+  players: LineupPlayer[];
+  totalExpectedPoints: number;
+  unfillablePositions: string[];
+  closestFormation?: string;
+  missingPlayers?: MissingPlayer[];
+}
+
 export interface LeagueManager {
   managerId: string;
   managerName: string;
