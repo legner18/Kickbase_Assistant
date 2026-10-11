@@ -121,6 +121,16 @@ builder.Services.AddQuartz(q =>
         // brauchen keine höhere Auflösung, aber auch tagsüber unabhängig von der Abend-Kette.
         .WithCronSchedule("0 30 * * * ?", x => x.InTimeZone(germanyTimeZone)));
 
+    var liveMarketJobKey = new JobKey(nameof(LiveMarketJob));
+    q.AddJob<LiveMarketJob>(opts => opts.WithIdentity(liveMarketJobKey));
+    q.AddTrigger(t => t
+        .ForJob(liveMarketJobKey)
+        .WithIdentity($"{nameof(LiveMarketJob)}-trigger")
+        // Feuert alle 60s wie LiveScoreJob, der Job selbst pausiert nachts (1-7 Uhr) und pusht nur
+        // bei echten Änderungen (siehe MarketChangeDetector) - kein Dauerfeuer ohne neue Daten.
+        .WithSimpleSchedule(s => s.WithIntervalInSeconds(60).RepeatForever())
+        .StartNow());
+
     // Phase 9+: Punkteprognose + Optimierer wird hier mit eigenem Cron-Schedule registriert.
 });
 

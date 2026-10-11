@@ -46,8 +46,8 @@ public class KickbaseApiClient(IHttpClientFactory httpClientFactory)
     public async Task<IReadOnlyList<KickbaseMatchdayDto>> GetMatchdaysAsync(string competitionId, CancellationToken ct = default) =>
         (await GetAsync<KickbaseMatchdaysResponseDto>($"/v4/competitions/{competitionId}/matchdays", ct)).Matchdays;
 
-    public Task<JsonElement> GetActivitiesFeedAsync(string leagueId, CancellationToken ct = default) =>
-        GetJsonAsync($"/v4/leagues/{leagueId}/activitiesFeed", ct);
+    public async Task<IReadOnlyList<KickbaseActivityItemDto>> GetActivitiesFeedAsync(string leagueId, CancellationToken ct = default) =>
+        (await GetAsync<KickbaseActivityFeedResponseDto>($"/v4/leagues/{leagueId}/activitiesFeed", ct)).Activities;
 
     public Task<JsonElement> GetTeamCenterAsync(string leagueId, string userId, int dayNumber, CancellationToken ct = default) =>
         GetJsonAsync($"/v4/leagues/{leagueId}/users/{userId}/teamcenter?dayNumber={dayNumber}", ct);

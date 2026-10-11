@@ -1,11 +1,13 @@
 import { DecimalPipe } from '@angular/common';
-import { Component, computed, effect, inject, signal } from '@angular/core';
+import { Component, OnDestroy, OnInit, computed, effect, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { ApiService } from '../../core/api.service';
 import { LeagueContextService } from '../../core/league-context.service';
-import { MarketScanEntry, POSITION_LABELS } from '../../core/models';
+import { LiveHubService } from '../../core/live-hub.service';
+import { LiveTransferActivity, MarketScanEntry, POSITION_LABELS } from '../../core/models';
 
 type SortKey = 'playerName' | 'price' | 'marketValueChangePercent' | 'overallScore';
+const MAX_RECENT_ACTIVITY = 10;
 
 @Component({
   selector: 'app-market-scan',
@@ -13,16 +15,18 @@ type SortKey = 'playerName' | 'price' | 'marketValueChangePercent' | 'overallSco
   templateUrl: './market-scan.component.html',
   styleUrl: './market-scan.component.css',
 })
-export class MarketScanComponent {
+export class MarketScanComponent implements OnInit, OnDestroy {
   private readonly api = inject(ApiService);
   private readonly router = inject(Router);
   readonly leagueContext = inject(LeagueContextService);
+  readonly liveHub = inject(LiveHubService);
 
   readonly entries = signal<MarketScanEntry[]>([]);
   readonly loading = signal(true);
   readonly sortKey = signal<SortKey>('overallScore');
   readonly sortDesc = signal(true);
   readonly positionLabels = POSITION_LABELS;
+  readonly recentActivity = signal<LiveTransferActivity[]>([]);
 
   readonly sorted = computed(() => {
     const key = this.sortKey();
@@ -46,6 +50,33 @@ export class MarketScanComponent {
         this.load(leagueId);
       }
     });
+
+    // Live-Markt-Updates (LiveMarketJob, alle 60s, nur bei echten Änderungen): Angebots-Änderungen
+    // lösen einen schlichten Re-Fetch aus (die Server-Diff-Logik verhindert bereits unnötige
+    // Pushes, ein erneutes GET ist hier einfacher als serverseitige Deltas im Frontend nachzubauen).
+    // Transfer-Aktivität wird direkt aus dem Push in eine kleine rollierende Liste übernommen, da es
+    // dafür keinen REST-Endpoint gibt (rein transient, wie die Live-Punkte-Seite).
+    effect(() => {
+      const update = this.liveHub.lastMarketUpdate();
+      const leagueId = this.leagueContext.selectedLeagueId();
+      if (!update || update.leagueId !== leagueId) {
+        return;
+      }
+
+      if (update.kind === 'listings') {
+        this.load(leagueId);
+      } else {
+        this.recentActivity.update((current) => [...update.transfers, ...current].slice(0, MAX_RECENT_ACTIVITY));
+      }
+    });
+  }
+
+  ngOnInit(): void {
+    this.liveHub.connect();
+  }
+
+  ngOnDestroy(): void {
+    this.liveHub.disconnect();
   }
 
   load(leagueId: string): void {

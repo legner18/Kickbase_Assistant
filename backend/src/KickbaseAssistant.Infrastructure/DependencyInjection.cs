@@ -87,6 +87,7 @@ public static class DependencyInjection
     {
         services.Configure<LiveHubOptions>(configuration.GetSection(LiveHubOptions.SectionName));
         services.AddSingleton<LiveHubClient>();
+        services.AddSingleton<LiveMarketStateCache>();
 
         return services;
     }

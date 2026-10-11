@@ -3,12 +3,34 @@
     <h1>Transfermarkt-Scanner</h1>
     <p class="hint">Score = Ø aus Momentum, Aufstellungs-Wahrscheinlichkeit und Restprogramm — höher ist lohnenswerter.</p>
   </div>
-  <button class="icon-btn" (click)="refresh()" title="Aktualisieren">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M21 12a9 9 0 1 1-2.6-6.4" /><path d="M21 4v5h-5" />
-    </svg>
-  </button>
+  <div class="toolbar">
+    <span class="badge" [class]="liveHub.connectionState() === 'connected' ? 'badge-good' : 'badge-neutral'">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="4" /></svg>
+      {{ liveHub.connectionState() === 'connected' ? 'Live' : liveHub.connectionState() === 'connecting' ? 'Verbinde…' : 'Getrennt' }}
+    </span>
+    <button class="icon-btn" (click)="refresh()" title="Aktualisieren">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 12a9 9 0 1 1-2.6-6.4" /><path d="M21 4v5h-5" />
+      </svg>
+    </button>
+  </div>
 </div>
+
+@if (recentActivity().length > 0) {
+  <div class="card">
+    <div class="card-header"><h2>Live-Aktivität</h2></div>
+    @for (activity of recentActivity(); track activity.occurredAt + activity.playerName) {
+      <div class="mover-row">
+        <span>
+          <strong>{{ activity.managerName }}</strong>
+          {{ activity.type === 'Buy' ? 'kauft' : 'verkauft' }}
+          {{ activity.playerName }}
+        </span>
+        <span>{{ activity.price | number: '1.0-0' : 'de' }} €</span>
+      </div>
+    }
+  </div>
+}
 
 @if (loading()) {
   <div class="card"><div class="skeleton" style="height: 320px"></div></div>

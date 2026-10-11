@@ -34,5 +34,22 @@ public class LiveHubClient(IOptions<LiveHubOptions> options, ILogger<LiveHubClie
         }
     }
 
+    public async Task PublishMarketUpdateAsync(string leagueId, object payload, CancellationToken ct)
+    {
+        try
+        {
+            if (_connection.State == HubConnectionState.Disconnected)
+            {
+                await _connection.StartAsync(ct);
+            }
+
+            await _connection.InvokeAsync("PublishMarketUpdate", leagueId, payload, ct);
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "SignalR-Markt-Publish an die Api fehlgeschlagen (LeagueId={LeagueId}).", leagueId);
+        }
+    }
+
     public ValueTask DisposeAsync() => _connection.DisposeAsync();
 }

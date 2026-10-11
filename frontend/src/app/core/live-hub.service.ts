@@ -1,7 +1,7 @@
 import { Injectable, signal } from '@angular/core';
 import * as signalR from '@microsoft/signalr';
 import { API_BASE_URL } from './api-config';
-import { LiveRankingUpdate } from './models';
+import { LiveMarketUpdate, LiveRankingUpdate } from './models';
 
 export type LiveConnectionState = 'disconnected' | 'connecting' | 'connected';
 
@@ -10,6 +10,7 @@ export class LiveHubService {
   private connection: signalR.HubConnection | null = null;
 
   readonly lastUpdate = signal<LiveRankingUpdate | null>(null);
+  readonly lastMarketUpdate = signal<LiveMarketUpdate | null>(null);
   readonly connectionState = signal<LiveConnectionState>('disconnected');
 
   connect(): void {
@@ -25,6 +26,9 @@ export class LiveHubService {
 
     connection.on('RankingUpdated', (_leagueId: string, payload: LiveRankingUpdate) => {
       this.lastUpdate.set(payload);
+    });
+    connection.on('MarketUpdated', (_leagueId: string, payload: LiveMarketUpdate) => {
+      this.lastMarketUpdate.set(payload);
     });
     connection.onreconnected(() => this.connectionState.set('connected'));
     connection.onreconnecting(() => this.connectionState.set('connecting'));

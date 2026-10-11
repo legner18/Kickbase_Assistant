@@ -18,4 +18,15 @@ public class LiveHub(ILogger<LiveHub> logger) : Hub
         logger.LogInformation("Live-Ranking-Update für Liga {LeagueId} empfangen, wird an Clients gebroadcastet.", leagueId);
         await Clients.Others.SendAsync("RankingUpdated", leagueId, payload);
     }
+
+    /// <summary>
+    /// Umbauplan "Echtzeit-Aktualisierung": Transfermarkt-Änderungen (neue/entfernte Angebote,
+    /// Preis-/Gebotsänderungen) und neue Liga-Transfers, von LiveMarketJob gepusht. Gleicher Hub,
+    /// eigener Event-Name statt eines zweiten Hubs - die Verbindung/Lifecycle-Logik bleibt für
+    /// Frontend und Worker identisch zu PublishRanking/RankingUpdated.
+    /// </summary>
+    public async Task PublishMarketUpdate(string leagueId, object payload)
+    {
+        await Clients.Others.SendAsync("MarketUpdated", leagueId, payload);
+    }
 }

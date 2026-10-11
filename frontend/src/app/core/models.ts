@@ -210,6 +210,38 @@ export interface LiveRankingUpdate {
   standings: RankingStanding[];
 }
 
+export interface MarketListingChange {
+  type: 'New' | 'Removed' | 'PriceChanged' | 'OfferCountChanged';
+  playerId: string;
+  playerName: string;
+  previousValue: number | null;
+  currentValue: number | null;
+}
+
+export interface LiveTransferActivity {
+  occurredAt: string;
+  playerName: string;
+  price: number;
+  managerName: string;
+  type: 'Buy' | 'Sell';
+}
+
+export interface LiveMarketListingsUpdate {
+  leagueId: string;
+  leagueName: string;
+  kind: 'listings';
+  changes: MarketListingChange[];
+}
+
+export interface LiveMarketTransfersUpdate {
+  leagueId: string;
+  leagueName: string;
+  kind: 'transfers';
+  transfers: LiveTransferActivity[];
+}
+
+export type LiveMarketUpdate = LiveMarketListingsUpdate | LiveMarketTransfersUpdate;
+
 export const POSITION_LABELS: Record<number, string> = {
   1: 'TW',
   2: 'ABW',

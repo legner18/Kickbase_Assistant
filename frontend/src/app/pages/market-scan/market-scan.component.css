@@ -3,6 +3,19 @@
   max-width: 60ch;
 }
 
+.mover-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.45rem 0;
+  border-bottom: 1px solid var(--gridline);
+  font-size: 0.87rem;
+}
+
+.mover-row:last-child {
+  border-bottom: none;
+}
+
 .mini-scores {
   display: flex;
   flex-direction: column;
