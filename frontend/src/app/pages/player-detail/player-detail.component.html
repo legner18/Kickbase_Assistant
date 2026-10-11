@@ -71,6 +71,15 @@
         <div class="stat">{{ p.startingXiQuota !== null ? (p.startingXiQuota | number: '1.0-0' : 'de') + ' %' : '–' }}</div>
       </div>
     </div>
+    <div class="card stat-card">
+      <div>
+        <div class="stat-label">MW-Prognose (nächstes Update)</div>
+        <div class="stat" [class.positive]="p.predictedChangePercent >= 0" [class.negative]="p.predictedChangePercent < 0">
+          {{ p.predictedChangePercent >= 0 ? '+' : '' }}{{ p.predictedChangePercent | number: '1.0-1' }}%
+        </div>
+        <div class="stat-sub">≈ {{ p.predictedNextValue | number: '1.0-0' : 'de' }} €</div>
+      </div>
+    </div>
   </div>
 
   <div class="card">
@@ -136,6 +145,58 @@
           <span class="badge badge-neutral">{{ owner.managerName }}</span>
         }
       </div>
+    </div>
+  }
+
+  @if (p.ownershipHistory.length > 0) {
+    <div class="card">
+      <div class="card-header"><h2>Besitzer-Verlauf</h2></div>
+      @for (league of p.ownershipHistory; track league.leagueId) {
+        <div class="ownership-league">
+          <div class="ownership-league-name">{{ league.leagueName }}</div>
+          <div class="ownership-chain">
+            @for (entry of league.chain; track entry.occurredAt; let last = $last) {
+              <span class="ownership-step">
+                {{ entry.managerName }} ({{ entry.type === 'Buy' ? 'kauft' : 'verkauft' }}, {{ entry.price | number: '1.0-0' : 'de' }} €)
+                @if (entry.heldDays !== null) {
+                  <span class="hint-inline">{{ entry.heldDays }} Tage</span>
+                }
+              </span>
+              @if (!last) {
+                <span class="ownership-arrow">→</span>
+              }
+            }
+          </div>
+        </div>
+      }
+    </div>
+  }
+
+  @if (p.marketListingHistory.length > 0) {
+    <div class="card card-table">
+      <div class="card-header" style="padding: 1.1rem 1.3rem 0"><h2>Zuletzt auf dem Markt</h2></div>
+      <table>
+        <thead>
+          <tr>
+            <th>Angeboten</th>
+            <th>Preis</th>
+            <th>Ergebnis</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (listing of p.marketListingHistory; track listing.listedAt) {
+            <tr>
+              <td>{{ listing.listedAt | date: 'dd.MM.yyyy HH:mm' }}</td>
+              <td>{{ listing.price | number: '1.0-0' : 'de' }} €</td>
+              <td>
+                <span class="badge" [class]="listing.outcome === 'Sold' ? 'badge-good' : listing.outcome === 'Open' ? 'badge-warning' : 'badge-neutral'">
+                  {{ listing.outcome === 'Sold' ? 'Verkauft' : listing.outcome === 'Open' ? 'Noch im Angebot' : 'Abgelaufen' }}
+                </span>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
     </div>
   }
 

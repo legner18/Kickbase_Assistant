@@ -5,10 +5,11 @@ import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { ApiService } from '../../core/api.service';
 import { LeagueContextService } from '../../core/league-context.service';
-import { LINEUP_STATUS_LABELS, LeagueManager, POSITION_LABELS, Player } from '../../core/models';
+import { LINEUP_STATUS_LABELS, LeagueManager, MarkingColor, POSITION_LABELS, Player, PlayerMarking } from '../../core/models';
 import { SparklineComponent } from '../../shared/sparkline/sparkline.component';
 
 type SortKey = 'name' | 'position' | 'marketValue' | 'change' | 'totalPoints' | 'sellScore';
+const MARKING_COLORS: MarkingColor[] = ['None', 'Green', 'Yellow', 'Red', 'Blue'];
 
 @Component({
   selector: 'app-squad',
@@ -31,14 +32,23 @@ export class SquadComponent {
   readonly managers = signal<LeagueManager[]>([]);
   readonly selectedManagerId = signal<string | null>(null);
 
+  readonly markings = signal<Record<string, PlayerMarking>>({});
+  readonly markingFilter = signal<MarkingColor | null>(null);
+  readonly markingColors = MARKING_COLORS;
+
   readonly positionLabels = POSITION_LABELS;
   readonly lineupLabels = LINEUP_STATUS_LABELS;
 
   readonly filteredSorted = computed(() => {
     const term = this.search().trim().toLowerCase();
+    const colorFilter = this.markingFilter();
+    const markings = this.markings();
     let list = this.players();
     if (term) {
       list = list.filter((p) => p.name.toLowerCase().includes(term) || (p.teamName ?? '').toLowerCase().includes(term));
+    }
+    if (colorFilter) {
+      list = list.filter((p) => (markings[p.id]?.color ?? 'None') === colorFilter);
     }
 
     const key = this.sortKey();
@@ -86,6 +96,9 @@ export class SquadComponent {
 
   load(leagueId: string, managerId: string | undefined): void {
     this.loading.set(true);
+    this.api.getMarkings(leagueId).subscribe((markings) => {
+      this.markings.set(Object.fromEntries(markings.map((m) => [m.playerId, m])));
+    });
     this.api.getSquad(leagueId, managerId).subscribe((players) => {
       this.players.set(players);
       this.loading.set(false);
@@ -151,5 +164,48 @@ export class SquadComponent {
       default:
         return 'badge-neutral';
     }
+  }
+
+  markingColor(playerId: string): MarkingColor {
+    return this.markings()[playerId]?.color ?? 'None';
+  }
+
+  markingColorHex(color: MarkingColor): string {
+    switch (color) {
+      case 'Green':
+        return '#0ca30c';
+      case 'Yellow':
+        return '#fab219';
+      case 'Red':
+        return '#d03b3b';
+      case 'Blue':
+        return '#2b7fff';
+      default:
+        return 'transparent';
+    }
+  }
+
+  setMarkingColor(playerId: string, color: MarkingColor): void {
+    const leagueId = this.leagueContext.selectedLeagueId();
+    if (!leagueId) return;
+
+    const existing = this.markings()[playerId];
+    this.api
+      .setMarking(leagueId, playerId, {
+        color,
+        labels: existing?.labels ?? [],
+        ownLineupEstimate: existing?.ownLineupEstimate ?? null,
+        expiresAt: existing?.expiresAt ?? null,
+      })
+      .subscribe(() => {
+        this.markings.update((current) => ({
+          ...current,
+          [playerId]: { playerId, color, labels: existing?.labels ?? [], ownLineupEstimate: existing?.ownLineupEstimate ?? null, expiresAt: existing?.expiresAt ?? null },
+        }));
+      });
+  }
+
+  setMarkingFilter(color: MarkingColor | ''): void {
+    this.markingFilter.set(color || null);
   }
 }

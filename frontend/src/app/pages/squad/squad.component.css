@@ -1,3 +1,26 @@
 .hint {
   margin: 0.15rem 0 0;
 }
+
+.marking-dots {
+  display: flex;
+  gap: 0.3rem;
+}
+
+.marking-dot {
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  cursor: pointer;
+}
+
+.marking-dot-none {
+  background: var(--surface-sunken) !important;
+}
+
+.marking-dot-active {
+  outline: 2px solid var(--text-primary);
+  outline-offset: 1px;
+}

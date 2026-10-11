@@ -10,7 +10,7 @@
 
 .budget-row {
   display: grid;
-  grid-template-columns: 110px 1fr 110px 90px 90px;
+  grid-template-columns: 110px 1fr 110px 90px 90px 120px;
   align-items: center;
   gap: 0.75rem;
   font-size: 0.85rem;
@@ -66,12 +66,19 @@
   white-space: nowrap;
 }
 
+.budget-balance {
+  text-align: right;
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+
 @media (max-width: 700px) {
   .budget-row {
     grid-template-columns: 90px 1fr 90px;
   }
   .budget-overpay,
-  .budget-count {
+  .budget-count,
+  .budget-balance {
     display: none;
   }
 }

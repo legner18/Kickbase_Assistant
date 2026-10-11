@@ -1,3 +1,35 @@
+.ownership-league {
+  padding: 0.75rem 1.3rem;
+  border-top: 1px solid var(--border);
+}
+
+.ownership-league:first-of-type {
+  border-top: none;
+}
+
+.ownership-league-name {
+  font-weight: 600;
+  margin-bottom: 0.4rem;
+}
+
+.ownership-chain {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+}
+
+.ownership-arrow {
+  color: var(--text-muted);
+}
+
+.hint-inline {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  margin-left: 0.3rem;
+}
+
 .fixture-row {
   display: flex;
   flex-wrap: wrap;

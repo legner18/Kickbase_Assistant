@@ -188,6 +188,28 @@ export interface UpcomingFixture {
   difficultyTier: number;
 }
 
+export interface MarketListingHistoryEntry {
+  leagueId: string;
+  listedAt: string;
+  removedAt: string | null;
+  price: number;
+  outcome: 'Open' | 'Sold' | 'Expired';
+}
+
+export interface OwnershipHistoryEntry {
+  managerName: string;
+  type: 'Buy' | 'Sell';
+  price: number;
+  occurredAt: string;
+  heldDays: number | null;
+}
+
+export interface OwnershipHistoryLeague {
+  leagueId: string;
+  leagueName: string;
+  chain: OwnershipHistoryEntry[];
+}
+
 export interface PlayerDetail {
   id: string;
   name: string;
@@ -209,6 +231,10 @@ export interface PlayerDetail {
   sellAlerts: PlayerSellAlert[];
   owners: PlayerOwner[];
   upcomingFixtures: UpcomingFixture[];
+  marketListingHistory: MarketListingHistoryEntry[];
+  ownershipHistory: OwnershipHistoryLeague[];
+  predictedChangePercent: number;
+  predictedNextValue: number;
 }
 
 export interface ManagerStat {
@@ -225,6 +251,34 @@ export interface ManagerStat {
   matchdayRank: number;
   currentMatchday: number;
   updatedAt: string;
+  transferBalance: number;
+}
+
+export type MarkingColor = 'None' | 'Green' | 'Yellow' | 'Red' | 'Blue';
+export type LineupEstimate = 'Sicher' | 'Erwartet' | 'Unsicher' | 'Unwahrscheinlich' | 'Ausgeschlossen';
+
+export interface PlayerMarking {
+  playerId: string;
+  color: MarkingColor;
+  labels: string[];
+  ownLineupEstimate: LineupEstimate | null;
+  expiresAt: string | null;
+}
+
+export interface SetMarkingRequest {
+  color: MarkingColor;
+  labels: string[];
+  ownLineupEstimate: LineupEstimate | null;
+  expiresAt: string | null;
+}
+
+export interface FairValueComparisonEntry {
+  managerId: string;
+  managerName: string;
+  playerCount: number;
+  squadMarketValue: number;
+  squadFairValue: number;
+  deltaPercent: number;
 }
 
 export interface LeagueTransfer {

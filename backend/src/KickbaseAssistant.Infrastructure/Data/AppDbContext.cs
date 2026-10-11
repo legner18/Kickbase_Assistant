@@ -21,6 +21,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<LeagueBalanceStatus> LeagueBalanceStatuses => Set<LeagueBalanceStatus>();
     public DbSet<TeamFixture> TeamFixtures => Set<TeamFixture>();
     public DbSet<PlayerSaleLock> PlayerSaleLocks => Set<PlayerSaleLock>();
+    public DbSet<MarketListingHistory> MarketListingHistories => Set<MarketListingHistory>();
+    public DbSet<PlayerMarking> PlayerMarkings => Set<PlayerMarking>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -111,6 +113,26 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             l.Property(x => x.PlayerId).IsRequired().HasMaxLength(50);
 
             l.HasIndex(x => new { x.LeagueId, x.PlayerId }).IsUnique();
+        });
+
+        builder.Entity<MarketListingHistory>(h =>
+        {
+            h.Property(x => x.LeagueId).IsRequired().HasMaxLength(50);
+            h.Property(x => x.PlayerId).IsRequired().HasMaxLength(50);
+            h.Property(x => x.PlayerName).IsRequired().HasMaxLength(200);
+            h.Property(x => x.Outcome).HasConversion<string>().HasMaxLength(10);
+
+            h.HasIndex(x => new { x.LeagueId, x.PlayerId, x.Outcome });
+        });
+
+        builder.Entity<PlayerMarking>(m =>
+        {
+            m.Property(x => x.LeagueId).IsRequired().HasMaxLength(50);
+            m.Property(x => x.PlayerId).IsRequired().HasMaxLength(50);
+            m.Property(x => x.Color).HasConversion<string>().HasMaxLength(10);
+            m.Property(x => x.OwnLineupEstimate).HasConversion<string>().HasMaxLength(20);
+
+            m.HasIndex(x => new { x.LeagueId, x.PlayerId }).IsUnique();
         });
 
         builder.Entity<LineupPrediction>(l =>

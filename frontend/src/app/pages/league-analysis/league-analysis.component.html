@@ -37,9 +37,49 @@
             }
           </div>
           <div class="budget-count">{{ stat.transferCount }} Transfers</div>
+          <div class="budget-balance" [class.positive]="stat.transferBalance >= 0" [class.negative]="stat.transferBalance < 0">
+            {{ stat.transferBalance >= 0 ? '+' : '' }}{{ stat.transferBalance | number: '1.0-0' : 'de' }} € Bilanz
+          </div>
         </div>
       }
     </div>
+  }
+</div>
+
+<div class="card card-table">
+  <div class="card-header" style="padding: 1.1rem 1.3rem 0">
+    <h2>Kader-Vergleich (Fair Value)</h2>
+    <p class="hint">Wer in der Liga über- bzw. unterbewertete Spieler im Kader hat.</p>
+  </div>
+  @if (fairValueComparison().length === 0) {
+    <p class="empty-state">Noch keine Daten.</p>
+  } @else {
+    <table>
+      <thead>
+        <tr>
+          <th>Manager</th>
+          <th>Spieler</th>
+          <th>Marktwert</th>
+          <th>Fair Value</th>
+          <th>Differenz</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (entry of fairValueComparison(); track entry.managerId) {
+          <tr>
+            <td>{{ entry.managerName }}</td>
+            <td>{{ entry.playerCount }}</td>
+            <td>{{ entry.squadMarketValue | number: '1.0-0' : 'de' }} €</td>
+            <td>{{ entry.squadFairValue | number: '1.0-0' : 'de' }} €</td>
+            <td>
+              <span class="badge" [class]="fairValueDeltaClass(entry.deltaPercent)">
+                {{ entry.deltaPercent >= 0 ? '+' : '' }}{{ entry.deltaPercent | number: '1.0-1' }}%
+              </span>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
   }
 </div>
 

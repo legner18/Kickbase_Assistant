@@ -3,7 +3,7 @@ import { Component, computed, effect, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { ApiService } from '../../core/api.service';
 import { LeagueContextService } from '../../core/league-context.service';
-import { LeagueTransfer, ManagerStat } from '../../core/models';
+import { FairValueComparisonEntry, LeagueTransfer, ManagerStat } from '../../core/models';
 
 @Component({
   selector: 'app-league-analysis',
@@ -17,6 +17,7 @@ export class LeagueAnalysisComponent {
 
   readonly managerStats = signal<ManagerStat[]>([]);
   readonly transfers = signal<LeagueTransfer[]>([]);
+  readonly fairValueComparison = signal<FairValueComparisonEntry[]>([]);
   readonly loading = signal(true);
 
   readonly sortedStats = computed(() => [...this.managerStats()].sort((a, b) => b.estimatedBudget - a.estimatedBudget));
@@ -67,6 +68,7 @@ export class LeagueAnalysisComponent {
       this.transfers.set(transfers);
       this.loading.set(false);
     });
+    this.api.getFairValueComparison(leagueId).subscribe((comparison) => this.fairValueComparison.set(comparison));
   }
 
   refresh(): void {
@@ -80,6 +82,12 @@ export class LeagueAnalysisComponent {
     if (pct === null) return 'badge-neutral';
     if (pct <= 3) return 'badge-good';
     if (pct <= 10) return 'badge-warning';
+    return 'badge-critical';
+  }
+
+  fairValueDeltaClass(pct: number): string {
+    if (pct >= 10) return 'badge-good';
+    if (pct >= -10) return 'badge-neutral';
     return 'badge-critical';
   }
 }

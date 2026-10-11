@@ -1,4 +1,3 @@
-using System.Text.Json;
 using KickbaseAssistant.Domain.Players;
 using KickbaseAssistant.Infrastructure.Data;
 using KickbaseAssistant.Infrastructure.Kickbase;
@@ -20,6 +19,10 @@ namespace KickbaseAssistant.Worker.Jobs;
 ///
 /// Erster Lauf pro Liga (nach Worker-Start) seedet den Cache nur, ohne zu pushen - sonst würde
 /// jedes bestehende Markt-Angebot als "neu" gemeldet.
+///
+/// Schreibt außerdem MarketListingHistory (Umbauplan "Zuletzt auf dem Markt") - Activities werden
+/// pro Lauf nur einmal geladen und sowohl für den Live-Transfer-Push als auch für die
+/// Sold/Expired-Erkennung einer verschwundenen Listung wiederverwendet (kein Extra-Aufruf).
 /// </summary>
 public class LiveMarketJob(
     KickbaseApiClient kickbaseApiClient,
@@ -46,12 +49,20 @@ public class LiveMarketJob(
         {
             try
             {
-                if (await CheckMarketAsync(league.Id, league.Name, ct))
+                var activities = await kickbaseApiClient.GetActivitiesFeedAsync(league.Id, ct);
+                var parsedTransfers = activities
+                    .Where(a => a.Type == TransferActivityType)
+                    .Select(TryParseTransfer)
+                    .Where(t => t is not null)
+                    .Select(t => t!)
+                    .ToList();
+
+                if (await CheckMarketAsync(league.Id, league.Name, parsedTransfers, ct))
                 {
                     pushCount++;
                 }
 
-                if (await CheckActivityAsync(league.Id, league.Name, ct))
+                if (await CheckActivityAsync(league.Id, league.Name, activities, parsedTransfers, ct))
                 {
                     pushCount++;
                 }
@@ -62,13 +73,16 @@ public class LiveMarketJob(
             }
         }
 
+        await dbContext.SaveChangesAsync(ct);
+
         if (pushCount > 0)
         {
             logger.LogInformation("Live-Markt-Check: {PushCount} Update(s) gepusht.", pushCount);
         }
     }
 
-    private async Task<bool> CheckMarketAsync(string leagueId, string leagueName, CancellationToken ct)
+    private async Task<bool> CheckMarketAsync(
+        string leagueId, string leagueName, List<ParsedTransferActivity> parsedTransfers, CancellationToken ct)
     {
         var listings = await kickbaseApiClient.GetMarketAsync(leagueId, ct);
         var current = listings.ToDictionary(
@@ -83,6 +97,9 @@ public class LiveMarketJob(
 
         stateCache.MarketByLeague[leagueId] = current;
         var changes = MarketChangeDetector.Detect(previous, current);
+
+        await RecordListingHistoryAsync(leagueId, changes, parsedTransfers, ct);
+
         if (changes.Count == 0)
         {
             return false;
@@ -107,9 +124,51 @@ public class LiveMarketJob(
         return true;
     }
 
-    private async Task<bool> CheckActivityAsync(string leagueId, string leagueName, CancellationToken ct)
+    /// <summary>
+    /// New -> öffnet einen MarketListingHistory-Eintrag. Removed -> schließt den offenen Eintrag
+    /// für diesen Spieler; Sold, wenn im selben Lauf eine passende Transfer-Activity für denselben
+    /// Spieler gefunden wurde, sonst Expired (Best-Effort, siehe MarketListingHistory-Doku).
+    /// </summary>
+    private async Task RecordListingHistoryAsync(
+        string leagueId, IReadOnlyList<MarketChange> changes, List<ParsedTransferActivity> parsedTransfers, CancellationToken ct)
     {
-        var activities = await kickbaseApiClient.GetActivitiesFeedAsync(leagueId, ct);
+        foreach (var change in changes)
+        {
+            if (change.Type == MarketChangeType.New)
+            {
+                dbContext.MarketListingHistories.Add(new MarketListingHistory
+                {
+                    LeagueId = leagueId,
+                    PlayerId = change.PlayerId,
+                    PlayerName = change.PlayerName,
+                    ListedAt = DateTimeOffset.UtcNow,
+                    Price = change.CurrentValue ?? 0,
+                    Outcome = MarketListingOutcome.Open,
+                });
+            }
+            else if (change.Type == MarketChangeType.Removed)
+            {
+                var open = await dbContext.MarketListingHistories
+                    .Where(h => h.LeagueId == leagueId && h.PlayerId == change.PlayerId && h.Outcome == MarketListingOutcome.Open)
+                    .OrderByDescending(h => h.ListedAt)
+                    .FirstOrDefaultAsync(ct);
+                if (open is null)
+                {
+                    continue; // Listung existierte schon vor dem ersten Worker-Start nach diesem Feature.
+                }
+
+                open.RemovedAt = DateTimeOffset.UtcNow;
+                open.Outcome = parsedTransfers.Any(t => t.PlayerId == change.PlayerId)
+                    ? MarketListingOutcome.Sold
+                    : MarketListingOutcome.Expired;
+            }
+        }
+    }
+
+    private async Task<bool> CheckActivityAsync(
+        string leagueId, string leagueName, IReadOnlyList<KickbaseActivityItemDto> activities,
+        List<ParsedTransferActivity> parsedTransfers, CancellationToken ct)
+    {
         if (activities.Count == 0)
         {
             return false;
@@ -123,13 +182,7 @@ public class LiveMarketJob(
             return false;
         }
 
-        var newTransfers = activities
-            .Where(a => a.Type == TransferActivityType && a.OccurredAt > lastSeen)
-            .OrderBy(a => a.OccurredAt)
-            .Select(TryParseTransfer)
-            .Where(t => t is not null)
-            .ToList();
-
+        var newTransfers = parsedTransfers.Where(t => t.OccurredAt > lastSeen).OrderBy(t => t.OccurredAt).ToList();
         stateCache.LastActivitySeenByLeague[leagueId] = latestSeen;
 
         if (newTransfers.Count == 0)
@@ -142,7 +195,14 @@ public class LiveMarketJob(
             leagueId,
             leagueName,
             kind = "transfers",
-            transfers = newTransfers,
+            transfers = newTransfers.Select(t => new
+            {
+                occurredAt = t.OccurredAt,
+                playerName = t.PlayerName,
+                price = t.Price,
+                managerName = t.ManagerName,
+                type = t.Type,
+            }),
         };
 
         await liveHubClient.PublishMarketUpdateAsync(leagueId, payload, ct);
@@ -154,10 +214,12 @@ public class LiveMarketJob(
     /// (Verkäufer, inneres "t"=2) - siehe KickbaseActivityItemDto. Alles andere (z.B. zugeloste
     /// Spieler ohne byr/slr) wird übersprungen statt geraten.
     /// </summary>
-    private static object? TryParseTransfer(KickbaseActivityItemDto activity)
+    private static ParsedTransferActivity? TryParseTransfer(KickbaseActivityItemDto activity)
     {
         var data = activity.Data;
-        if (!data.TryGetProperty("pn", out var playerNameEl) || !data.TryGetProperty("trp", out var priceEl))
+        if (!data.TryGetProperty("pi", out var playerIdEl)
+            || !data.TryGetProperty("pn", out var playerNameEl)
+            || !data.TryGetProperty("trp", out var priceEl))
         {
             return null;
         }
@@ -169,14 +231,13 @@ public class LiveMarketJob(
             return null;
         }
 
-        return new
-        {
-            occurredAt = activity.OccurredAt,
-            playerName = playerNameEl.GetString(),
-            price = priceEl.GetInt64(),
-            managerName = hasBuyer ? buyerEl.GetString() : sellerEl.GetString(),
-            type = hasBuyer ? "Buy" : "Sell",
-        };
+        return new ParsedTransferActivity(
+            playerIdEl.GetString() ?? "",
+            playerNameEl.GetString() ?? "",
+            activity.OccurredAt,
+            priceEl.GetInt64(),
+            (hasBuyer ? buyerEl.GetString() : sellerEl.GetString()) ?? "",
+            hasBuyer ? "Buy" : "Sell");
     }
 
     private static bool IsQuietNightHour(DateTimeOffset utcNow)
@@ -184,4 +245,7 @@ public class LiveMarketJob(
         var hour = TimeZoneInfo.ConvertTime(utcNow, GermanyTimeZone).Hour;
         return hour is >= 1 and < 7;
     }
+
+    private sealed record ParsedTransferActivity(
+        string PlayerId, string PlayerName, DateTimeOffset OccurredAt, long Price, string ManagerName, string Type);
 }

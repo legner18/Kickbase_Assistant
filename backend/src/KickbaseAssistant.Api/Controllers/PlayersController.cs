@@ -1,3 +1,4 @@
+using KickbaseAssistant.Domain.Players;
 using KickbaseAssistant.Infrastructure.Data;
 using KickbaseAssistant.Infrastructure.Players;
 using Microsoft.AspNetCore.Mvc;
@@ -221,6 +222,64 @@ public class PlayersController(AppDbContext dbContext, PlayerMetricsService play
         var fairValue = fairValues.GetValueOrDefault(player.Id);
         var matchdayMetrics = await playerMetricsService.ComputeMatchdayMetricsAsync(player.Id, ct);
 
+        // Umbauplan "MW-Prognose 22 Uhr": gewichteter Trend der letzten 5 Tage, siehe
+        // MarketValuePredictor - bewusst kein ML, nur ein einfaches, erklärbares Modell.
+        var recentSnapshots = await dbContext.MarketValueSnapshots
+            .Where(s => s.PlayerId == id)
+            .OrderByDescending(s => s.Date)
+            .Take(5)
+            .Select(s => new { s.MarketValue, s.MarketValueChange })
+            .ToListAsync(ct);
+        var recentPercentChanges = recentSnapshots
+            .AsEnumerable()
+            .Reverse()
+            .Select(s =>
+            {
+                var previousValue = s.MarketValue - s.MarketValueChange;
+                return previousValue > 0 ? s.MarketValueChange / (double)previousValue * 100 : 0;
+            })
+            .ToList();
+        var predictedChangePercent = MarketValuePredictor.PredictNextChangePercent(recentPercentChanges);
+        var predictedNextValue = MarketValuePredictor.PredictNextValue(player.MarketValue, predictedChangePercent);
+
+        var marketListingHistory = await dbContext.MarketListingHistories
+            .Where(h => h.PlayerId == id)
+            .OrderByDescending(h => h.ListedAt)
+            .Take(10)
+            .Select(h => new { h.LeagueId, h.ListedAt, h.RemovedAt, h.Price, outcome = h.Outcome.ToString() })
+            .ToListAsync(ct);
+
+        // Umbauplan "Besitzer-Verlauf je Spieler": Kette Kickbase -> ManagerA (4 Tage) -> ... - pro
+        // Liga eigenständig, da Kader-Ökonomien zwischen Ligen unabhängig sind.
+        var transferHistory = await dbContext.LeagueTransfers
+            .Where(t => t.PlayerId == id)
+            .OrderBy(t => t.OccurredAt)
+            .Select(t => new { t.LeagueId, t.ManagerName, t.Type, t.Price, t.OccurredAt })
+            .ToListAsync(ct);
+        var leagueNames = await dbContext.Leagues
+            .Where(l => transferHistory.Select(t => t.LeagueId).Distinct().Contains(l.Id))
+            .ToDictionaryAsync(l => l.Id, l => l.Name, ct);
+        var ownershipHistory = transferHistory
+            .GroupBy(t => t.LeagueId)
+            .Select(g =>
+            {
+                var chain = g.OrderBy(t => t.OccurredAt).ToList();
+                var entries = chain.Select((t, i) =>
+                {
+                    DateTimeOffset? heldUntil = i + 1 < chain.Count ? chain[i + 1].OccurredAt : null;
+                    return new
+                    {
+                        managerName = t.ManagerName,
+                        type = t.Type.ToString(),
+                        price = t.Price,
+                        occurredAt = t.OccurredAt,
+                        heldDays = heldUntil.HasValue ? (int?)(heldUntil.Value - t.OccurredAt).TotalDays : null,
+                    };
+                });
+                return new { leagueId = g.Key, leagueName = leagueNames.GetValueOrDefault(g.Key, g.Key), chain = entries };
+            })
+            .ToList();
+
         return Ok(new
         {
             id = player.Id,
@@ -243,6 +302,10 @@ public class PlayersController(AppDbContext dbContext, PlayerMetricsService play
             sellAlerts,
             owners,
             upcomingFixtures,
+            marketListingHistory,
+            ownershipHistory,
+            predictedChangePercent,
+            predictedNextValue,
         });
     }
 

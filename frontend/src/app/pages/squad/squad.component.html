@@ -11,6 +11,14 @@
         }
       </select>
     }
+    <select (change)="setMarkingFilter($any($event.target).value)">
+      <option value="">Alle Markierungen</option>
+      @for (color of markingColors; track color) {
+        @if (color !== 'None') {
+          <option [value]="color">{{ color }}</option>
+        }
+      }
+    </select>
     <input type="search" placeholder="Suchen…" [value]="search()" (input)="search.set($any($event.target).value)" />
     <button class="icon-btn" (click)="refresh()" title="Aktualisieren">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -38,6 +46,7 @@
           <th class="sortable" (click)="setSort('totalPoints')">Punkte</th>
           <th>Aufstellung</th>
           <th class="sortable" (click)="setSort('sellScore')">Verkaufs-Score</th>
+          <th>Markierung</th>
         </tr>
       </thead>
       <tbody>
@@ -76,6 +85,21 @@
               } @else {
                 <span class="empty-state">–</span>
               }
+            </td>
+            <td>
+              <div class="marking-dots" (click)="$event.stopPropagation()">
+                @for (color of markingColors; track color) {
+                  <button
+                    type="button"
+                    class="marking-dot"
+                    [class.marking-dot-active]="markingColor(player.id) === color"
+                    [class.marking-dot-none]="color === 'None'"
+                    [style.background]="markingColorHex(color)"
+                    [title]="color"
+                    (click)="setMarkingColor(player.id, color)"
+                  ></button>
+                }
+              </div>
             </td>
           </tr>
         }

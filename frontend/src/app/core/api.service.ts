@@ -3,6 +3,7 @@ import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { API_BASE_URL } from './api-config';
 import {
+  FairValueComparisonEntry,
   League,
   LeagueBalanceStatus,
   LeagueManager,
@@ -11,12 +12,14 @@ import {
   ManagerStat,
   MarketScanEntry,
   MarketValueHistoryPoint,
+  PlayerMarking,
   Player,
   PlayerComparables,
   PlayerDetail,
   PlayerSearchResult,
   SellAlert,
   SellPlan,
+  SetMarkingRequest,
   ValueRankingEntry,
 } from './models';
 
@@ -51,6 +54,22 @@ export class ApiService {
 
   getLineupOptimizer(leagueId: string): Observable<LineupOptimizerResult> {
     return this.http.get<LineupOptimizerResult>(`${this.base}/api/leagues/${leagueId}/lineup-optimizer`);
+  }
+
+  getFairValueComparison(leagueId: string): Observable<FairValueComparisonEntry[]> {
+    return this.http.get<FairValueComparisonEntry[]>(`${this.base}/api/leagues/${leagueId}/fair-value-comparison`);
+  }
+
+  getMarkings(leagueId: string): Observable<PlayerMarking[]> {
+    return this.http.get<PlayerMarking[]>(`${this.base}/api/leagues/${leagueId}/markings`);
+  }
+
+  setMarking(leagueId: string, playerId: string, request: SetMarkingRequest): Observable<void> {
+    return this.http.put<void>(`${this.base}/api/leagues/${leagueId}/markings/${playerId}`, request);
+  }
+
+  deleteMarking(leagueId: string, playerId: string): Observable<void> {
+    return this.http.delete<void>(`${this.base}/api/leagues/${leagueId}/markings/${playerId}`);
   }
 
   getSquad(leagueId: string, managerId?: string): Observable<Player[]> {
