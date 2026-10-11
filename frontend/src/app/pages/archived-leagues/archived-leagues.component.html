@@ -1,0 +1,16 @@
+<div class="card-header page-header">
+  <div>
+    <h1>Archiv</h1>
+    <p class="hint">Ligen, die der Kickbase-Account nicht mehr liefert. Historie bleibt erhalten, aber keine Jobs/Alarme mehr aktiv.</p>
+  </div>
+</div>
+
+@if (leagueContext.archivedLeagues().length === 0) {
+  <p class="empty-state">Keine archivierten Ligen.</p>
+} @else {
+  @for (league of leagueContext.archivedLeagues(); track league.id) {
+    <div class="card">
+      <strong>{{ league.name }}</strong>
+    </div>
+  }
+}

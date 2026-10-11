@@ -10,6 +10,48 @@
   </button>
 </div>
 
+@if (balanceStatus(); as bs) {
+  <div
+    class="card balance-guard"
+    [class.status-green]="bs.status === 'Green'"
+    [class.status-yellow]="bs.status === 'Yellow'"
+    [class.status-red]="bs.status === 'Red'"
+  >
+    <div class="card-header">
+      <h2>Kontostand-Wächter</h2>
+      <span
+        class="badge"
+        [class.badge-good]="bs.status === 'Green'"
+        [class.badge-warning]="bs.status === 'Yellow'"
+        [class.badge-critical]="bs.status === 'Red'"
+      >
+        {{ statusLabel() }}
+      </span>
+    </div>
+    <div class="balance-guard-body">
+      <div>
+        <div class="stat-label">Kontostand</div>
+        <div class="stat" [class.negative]="bs.balance < 0">{{ bs.balance | number: '1.0-0' : 'de' }} €</div>
+      </div>
+      <div>
+        <div class="stat-label">Kreditrahmen (33%-Regel)</div>
+        <div class="stat">{{ bs.creditLimit | number: '1.0-0' : 'de' }} €</div>
+      </div>
+      <div>
+        <div class="stat-label">Anpfiff Spieltag {{ bs.nextMatchdayNumber }}</div>
+        <div class="stat">{{ countdownLabel() }}</div>
+        <div class="stat-sub">{{ bs.nextKickoffAt | date: 'dd.MM. HH:mm' }} Uhr</div>
+      </div>
+    </div>
+    @if (bs.rosterGaps.length > 0) {
+      <p class="roster-gaps">⚠️ Kader-Lücken: {{ bs.rosterGaps.join(', ') }}</p>
+    }
+    @if (bs.status !== 'Green') {
+      <a routerLink="/kader" class="balance-guard-cta">Kader prüfen →</a>
+    }
+  </div>
+}
+
 <div class="card-grid">
   <div class="card stat-card">
     <div>

@@ -16,8 +16,8 @@ namespace KickbaseAssistant.Worker.Jobs;
 /// - Lineup: latest LigaInsider-derived LineupPrediction status (Starting=100 ... Out=0). Already
 ///   covers all 18 Bundesliga teams as a side effect of LigaInsiderScrapeJob (see its notes).
 /// - Fixtures: average league placement of the player's next up-to-3 opponents (placement 1 =
-///   toughest, 18 = easiest), normalized to 0-100. A simplified stand-in for real difficulty
-///   (doesn't account for home/away, form, etc.) - "Restprogramm" from the plan, kept basic.
+///   toughest, 18 = easiest), normalized to 0-100 via FixtureDifficultyCalculator.ComputeScore -
+///   "Restprogramm" from the plan, kept basic (doesn't account for home/away, form, etc.).
 ///
 /// This is a full-refresh snapshot job, not a history log: MarketScanResult rows for a league are
 /// cleared and rewritten every run, since "what's on the market right now" is what matters.
@@ -27,6 +27,11 @@ namespace KickbaseAssistant.Worker.Jobs;
 /// one: a LOW score on an owned player means bad momentum/lineup/fixtures, worth reviewing for a
 /// sale. Reuses the per-league table/matchday/ranking data already fetched for market scoring, no
 /// extra Kickbase calls.
+///
+/// Also owns TeamFixture (Umbauplan "Gegnerstärke"): once per competition per run, the next 5
+/// fixtures for every team in that competition (not just teams with known players) are written via
+/// FixtureDifficultyCalculator.ComputeUpcomingFixtures, so the player-detail page has data for any
+/// player regardless of whether they're currently on a market/squad.
 /// </summary>
 public class TransferMarketScanJob(
     KickbaseApiClient kickbaseApiClient,
@@ -35,7 +40,6 @@ public class TransferMarketScanJob(
 {
     private const int MarketValueTimeframeDays = 92;
     private const int MomentumWindowDays = 14;
-    private const int FixtureLookaheadMatches = 3;
 
     public async Task Execute(IJobExecutionContext context)
     {
@@ -45,6 +49,8 @@ public class TransferMarketScanJob(
         var placementsByCompetition = new Dictionary<string, Dictionary<string, int>>();
         var teamNamesByCompetition = new Dictionary<string, Dictionary<string, string>>();
         var matchdaysByCompetition = new Dictionary<string, IReadOnlyList<KickbaseMatchdayDto>>();
+        var flatMatchesByCompetition = new Dictionary<string, List<FixtureMatch>>();
+        var teamFixturesWritten = new HashSet<string>();
         var totalScanned = 0;
 
         var totalSquadScored = 0;
@@ -87,9 +93,17 @@ public class TransferMarketScanJob(
                 {
                     matchdays = await kickbaseApiClient.GetMatchdaysAsync(league.CompetitionId, ct);
                     matchdaysByCompetition[league.CompetitionId] = matchdays;
+                    flatMatchesByCompetition[league.CompetitionId] = matchdays
+                        .SelectMany(md => md.Matches.Select(m => new FixtureMatch(md.Day, m.HomeTeamId, m.AwayTeamId)))
+                        .ToList();
                 }
 
                 currentMatchday = (await kickbaseApiClient.GetRankingAsync(league.Id, ct)).CurrentMatchday;
+
+                if (teamFixturesWritten.Add(league.CompetitionId))
+                {
+                    await WriteTeamFixturesAsync(league.CompetitionId, flatMatchesByCompetition[league.CompetitionId], currentMatchday, placements, teamNames, ct);
+                }
             }
             catch (Exception ex)
             {
@@ -103,7 +117,8 @@ public class TransferMarketScanJob(
 
                 var momentum = await ComputeMomentumAsync(league.CompetitionId, marketPlayer.Id, ct);
                 var lineupScore = await ComputeLineupScoreAsync(marketPlayer.Id, ct);
-                var fixtureScore = ComputeFixtureScore(marketPlayer.TeamId, matchdays, currentMatchday, placements);
+                var fixtureScore = FixtureDifficultyCalculator.ComputeScore(
+                    marketPlayer.TeamId, flatMatchesByCompetition[league.CompetitionId], currentMatchday, placements);
 
                 dbContext.MarketScanResults.Add(new MarketScanResult
                 {
@@ -132,7 +147,8 @@ public class TransferMarketScanJob(
             {
                 var momentum = await ComputeMomentumAsync(league.CompetitionId, player.Id, ct);
                 var lineupScore = await ComputeLineupScoreAsync(player.Id, ct);
-                var fixtureScore = ComputeFixtureScore(player.TeamId, matchdays, currentMatchday, placements);
+                var fixtureScore = FixtureDifficultyCalculator.ComputeScore(
+                    player.TeamId, flatMatchesByCompetition[league.CompetitionId], currentMatchday, placements);
 
                 dbContext.SquadPlayerScores.Add(new SquadPlayerScore
                 {
@@ -236,31 +252,33 @@ public class TransferMarketScanJob(
         };
     }
 
-    private static double ComputeFixtureScore(
-        string teamId,
-        IReadOnlyList<KickbaseMatchdayDto> matchdays,
+    private async Task WriteTeamFixturesAsync(
+        string competitionId,
+        List<FixtureMatch> flatMatches,
         int currentMatchday,
-        Dictionary<string, int> placements)
+        Dictionary<string, int> placements,
+        Dictionary<string, string> teamNames,
+        CancellationToken ct)
     {
-        var upcomingOpponents = matchdays
-            .Where(md => md.Day > currentMatchday)
-            .OrderBy(md => md.Day)
-            .SelectMany(md => md.Matches)
-            .Where(m => m.HomeTeamId == teamId || m.AwayTeamId == teamId)
-            .Take(FixtureLookaheadMatches)
-            .Select(m => m.HomeTeamId == teamId ? m.AwayTeamId : m.HomeTeamId)
-            .ToList();
+        var oldFixtures = await dbContext.TeamFixtures.Where(f => f.CompetitionId == competitionId).ToListAsync(ct);
+        dbContext.TeamFixtures.RemoveRange(oldFixtures);
 
-        var opponentPlacements = upcomingOpponents
-            .Where(placements.ContainsKey)
-            .Select(id => placements[id])
-            .ToList();
-
-        if (opponentPlacements.Count == 0 || placements.Count == 0)
+        foreach (var teamId in placements.Keys)
         {
-            return 50;
+            var upcoming = FixtureDifficultyCalculator.ComputeUpcomingFixtures(teamId, flatMatches, currentMatchday, placements);
+            foreach (var fixture in upcoming)
+            {
+                dbContext.TeamFixtures.Add(new TeamFixture
+                {
+                    CompetitionId = competitionId,
+                    TeamId = teamId,
+                    MatchdayNumber = fixture.Day,
+                    OpponentTeamId = fixture.OpponentTeamId,
+                    OpponentTeamName = teamNames.GetValueOrDefault(fixture.OpponentTeamId),
+                    IsHome = fixture.IsHome,
+                    DifficultyTier = fixture.DifficultyTier,
+                });
+            }
         }
-
-        return Math.Clamp(opponentPlacements.Average() / placements.Count * 100, 0, 100);
     }
 }

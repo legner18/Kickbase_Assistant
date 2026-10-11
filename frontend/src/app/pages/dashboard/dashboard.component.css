@@ -2,6 +2,43 @@
   margin: 0.15rem 0 0;
 }
 
+.balance-guard {
+  margin-bottom: 1.25rem;
+  border-left: 4px solid var(--status-good);
+}
+
+.balance-guard.status-yellow {
+  border-left-color: var(--status-warning);
+}
+
+.balance-guard.status-red {
+  border-left-color: var(--status-critical);
+}
+
+.balance-guard-body {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.25rem;
+}
+
+@media (max-width: 700px) {
+  .balance-guard-body {
+    grid-template-columns: 1fr;
+  }
+}
+
+.roster-gaps {
+  margin: 0.9rem 0 0;
+  font-size: 0.85rem;
+  color: var(--status-warning);
+}
+
+.balance-guard-cta {
+  display: inline-block;
+  margin-top: 0.75rem;
+  font-weight: 600;
+}
+
 .two-col {
   display: grid;
   grid-template-columns: 1fr 1fr;

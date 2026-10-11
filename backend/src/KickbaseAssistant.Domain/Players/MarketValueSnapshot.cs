@@ -8,4 +8,5 @@ public class MarketValueSnapshot
     public DateOnly Date { get; set; }
     public int MarketValue { get; set; }
     public int MarketValueChange { get; set; }
+    public int StatusCode { get; set; }
 }

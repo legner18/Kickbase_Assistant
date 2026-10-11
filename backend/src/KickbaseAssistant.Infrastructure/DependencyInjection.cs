@@ -1,6 +1,8 @@
 using KickbaseAssistant.Infrastructure.Data;
 using KickbaseAssistant.Infrastructure.Kickbase;
+using KickbaseAssistant.Infrastructure.Leagues;
 using KickbaseAssistant.Infrastructure.LigaInsider;
+using KickbaseAssistant.Infrastructure.Players;
 using KickbaseAssistant.Infrastructure.Notifications;
 using KickbaseAssistant.Infrastructure.Realtime;
 using Microsoft.EntityFrameworkCore;
@@ -19,6 +21,7 @@ public static class DependencyInjection
     {
         services.AddDbContext<AppDbContext>(options =>
             options.UseNpgsql(configuration.GetConnectionString("Default")));
+        services.AddScoped<PlayerMetricsService>();
 
         return services;
     }
@@ -48,6 +51,7 @@ public static class DependencyInjection
         }).AddHttpMessageHandler<KickbaseAuthHandler>();
 
         services.AddScoped<KickbaseApiClient>();
+        services.AddScoped<LeagueSyncService>();
 
         return services;
     }

@@ -37,6 +37,8 @@
           <th>Punkte gesamt</th>
           <th>Punkte/Spiel (Ø)</th>
           <th>€ pro Punkt</th>
+          <th>Pkt/Mio.</th>
+          <th>Fair Value</th>
         </tr>
       </thead>
       <tbody>
@@ -50,6 +52,15 @@
             <td>{{ entry.totalPoints }}</td>
             <td>{{ entry.averagePoints }}</td>
             <td><strong>{{ entry.pricePerPoint | number: '1.0-0' : 'de' }} €</strong></td>
+            <td>{{ entry.pointsPerMillion | number: '1.0-1' : 'de' }}</td>
+            <td>
+              <span [class]="entry.fairValueDeltaPercent >= 0 ? 'positive' : 'negative'">
+                {{ entry.fairValueDeltaPercent >= 0 ? '+' : '' }}{{ entry.fairValueDeltaPercent | number: '1.0-0' : 'de' }}%
+              </span>
+              @if (isDeal(entry)) {
+                <span class="badge badge-good">Deal</span>
+              }
+            </td>
           </tr>
         }
       </tbody>

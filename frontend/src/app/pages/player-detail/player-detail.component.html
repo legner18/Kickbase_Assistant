@@ -43,10 +43,54 @@
     </div>
   </div>
 
+  <div class="card-grid">
+    <div class="card stat-card">
+      <div>
+        <div class="stat-label">Fair Value</div>
+        <div class="stat">{{ p.fairValue | number: '1.0-0' : 'de' }} €</div>
+        <div class="stat-sub" [class.positive]="p.fairValueDeltaPercent >= 0" [class.negative]="p.fairValueDeltaPercent < 0">
+          {{ p.fairValueDeltaPercent >= 0 ? '+' : '' }}{{ p.fairValueDeltaPercent | number: '1.0-0' : 'de' }}% vs. Marktwert
+        </div>
+      </div>
+    </div>
+    <div class="card stat-card">
+      <div>
+        <div class="stat-label">Punkte/Mio. €</div>
+        <div class="stat">{{ p.pointsPerMillion | number: '1.0-1' : 'de' }}</div>
+      </div>
+    </div>
+    <div class="card stat-card">
+      <div>
+        <div class="stat-label">Median (Saison)</div>
+        <div class="stat">{{ p.medianPoints !== null ? p.medianPoints : '–' }}</div>
+      </div>
+    </div>
+    <div class="card stat-card">
+      <div>
+        <div class="stat-label">S11-Quote</div>
+        <div class="stat">{{ p.startingXiQuota !== null ? (p.startingXiQuota | number: '1.0-0' : 'de') + ' %' : '–' }}</div>
+      </div>
+    </div>
+  </div>
+
   <div class="card">
     <div class="card-header"><h2>Marktwert-Verlauf</h2></div>
     <app-value-chart [points]="history()" />
   </div>
+
+  @if (p.upcomingFixtures.length > 0) {
+    <div class="card">
+      <div class="card-header"><h2>Restprogramm</h2></div>
+      <div class="fixture-row">
+        @for (fixture of p.upcomingFixtures; track fixture.matchdayNumber) {
+          <div class="fixture-tile">
+            <span class="badge" [class]="fixtureTierClass(fixture.difficultyTier)">{{ fixture.opponentTeamName ?? fixture.opponentTeamId }}</span>
+            <span class="fixture-meta">{{ fixture.isHome ? 'Heim' : 'Auswärts' }} · ST {{ fixture.matchdayNumber }}</span>
+          </div>
+        }
+      </div>
+    </div>
+  }
 
   @if (comparables()) {
     @let c = comparables()!;

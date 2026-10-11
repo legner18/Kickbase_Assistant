@@ -1,4 +1,5 @@
 using KickbaseAssistant.Infrastructure.Data;
+using KickbaseAssistant.Infrastructure.Players;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -6,7 +7,7 @@ namespace KickbaseAssistant.Api.Controllers;
 
 [ApiController]
 [Route("api")]
-public class PlayersController(AppDbContext dbContext) : ControllerBase
+public class PlayersController(AppDbContext dbContext, PlayerMetricsService playerMetricsService) : ControllerBase
 {
     [HttpGet("leagues/{leagueId}/squad")]
     public async Task<ActionResult> GetSquad(string leagueId, [FromQuery] string? managerId, CancellationToken ct)
@@ -36,6 +37,7 @@ public class PlayersController(AppDbContext dbContext) : ControllerBase
                 marketValue = p.MarketValue,
                 totalPoints = p.TotalPoints,
                 averagePoints = p.AveragePoints,
+                statusCode = p.StatusCode,
                 lastSeenAt = p.LastSeenAt,
                 latestLineupStatus = dbContext.LineupPredictions
                     .Where(l => l.PlayerId == p.Id)
@@ -109,7 +111,7 @@ public class PlayersController(AppDbContext dbContext) : ControllerBase
             query = query.Where(p => p.Position == position);
         }
 
-        var ranking = await query
+        var ranked = await query
             .OrderBy(p => (double)p.MarketValue / p.TotalPoints)
             .Take(100)
             .Select(p => new
@@ -124,6 +126,27 @@ public class PlayersController(AppDbContext dbContext) : ControllerBase
                 pricePerPoint = (double)p.MarketValue / p.TotalPoints,
             })
             .ToListAsync(ct);
+
+        var fairValues = await playerMetricsService.ComputeFairValuesAsync(ct);
+
+        var ranking = ranked.Select(p =>
+        {
+            var fairValue = fairValues.GetValueOrDefault(p.id);
+            return new
+            {
+                p.id,
+                p.name,
+                p.teamName,
+                p.position,
+                p.marketValue,
+                p.totalPoints,
+                p.averagePoints,
+                p.pricePerPoint,
+                pointsPerMillion = p.marketValue > 0 ? p.averagePoints / (p.marketValue / 1_000_000.0) : 0,
+                fairValue,
+                fairValueDeltaPercent = p.marketValue > 0 ? (fairValue - p.marketValue) / p.marketValue * 100 : 0,
+            };
+        });
 
         return Ok(ranking);
     }
@@ -181,6 +204,23 @@ public class PlayersController(AppDbContext dbContext) : ControllerBase
             .Select(m => new { m.LeagueId, m.ManagerId, m.ManagerName })
             .ToListAsync(ct);
 
+        var upcomingFixtures = await dbContext.TeamFixtures
+            .Where(f => f.CompetitionId == player.CompetitionId.ToString() && f.TeamId == player.TeamId)
+            .OrderBy(f => f.MatchdayNumber)
+            .Select(f => new
+            {
+                matchdayNumber = f.MatchdayNumber,
+                opponentTeamId = f.OpponentTeamId,
+                opponentTeamName = f.OpponentTeamName,
+                isHome = f.IsHome,
+                difficultyTier = f.DifficultyTier,
+            })
+            .ToListAsync(ct);
+
+        var fairValues = await playerMetricsService.ComputeFairValuesAsync(ct);
+        var fairValue = fairValues.GetValueOrDefault(player.Id);
+        var matchdayMetrics = await playerMetricsService.ComputeMatchdayMetricsAsync(player.Id, ct);
+
         return Ok(new
         {
             id = player.Id,
@@ -191,10 +231,18 @@ public class PlayersController(AppDbContext dbContext) : ControllerBase
             marketValue = player.MarketValue,
             totalPoints = player.TotalPoints,
             averagePoints = player.AveragePoints,
+            statusCode = player.StatusCode,
             lastSeenAt = player.LastSeenAt,
+            fairValue,
+            fairValueDeltaPercent = player.MarketValue > 0 ? (fairValue - player.MarketValue) / player.MarketValue * 100 : 0,
+            pointsPerMillion = player.MarketValue > 0 ? player.AveragePoints / (player.MarketValue / 1_000_000.0) : 0,
+            medianPoints = matchdayMetrics?.MedianPoints,
+            startingXiQuota = matchdayMetrics?.StartingXiQuota,
+            pointsPerMinute = matchdayMetrics?.PointsPerMinute,
             lineupHistory,
             sellAlerts,
             owners,
+            upcomingFixtures,
         });
     }
 

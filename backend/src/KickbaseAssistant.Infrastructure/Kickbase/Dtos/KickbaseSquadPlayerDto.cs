@@ -11,6 +11,12 @@ namespace KickbaseAssistant.Infrastructure.Kickbase.Dtos;
 /// the market ("p"/"ap" in KickbaseMarketPlayerDto) and other-manager-squad ("p"/"ap" in
 /// KickbaseManagerSquadPlayerDto) endpoints; this squad endpoint was the one place points were
 /// never mapped, which silently left the user's own squad stuck at 0 points in the DB forever.
+///
+/// "st" (status) added 2026-10-11, live-verified against the Bousching squad (14 players with
+/// st=0, one with st=2 and stl=[2]). Only 0 ("fit") and 2 are actually confirmed; other codes
+/// occasionally cited in community write-ups (1, 4, 8, 16 for angeschlagen/rot/aufbautraining/
+/// gelb-rot) are unverified for this API version - see PlayerStatus.GetLabel, which falls back to
+/// a generic label for anything not confirmed live.
 /// </summary>
 public class KickbaseSquadPlayerDto
 {
@@ -34,6 +40,9 @@ public class KickbaseSquadPlayerDto
 
     [JsonPropertyName("ap")]
     public int AveragePoints { get; set; }
+
+    [JsonPropertyName("st")]
+    public int Status { get; set; }
 }
 
 public class KickbaseSquadResponseDto

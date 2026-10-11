@@ -9,12 +9,18 @@ namespace KickbaseAssistant.Api.Controllers;
 public class LeaguesController(AppDbContext dbContext) : ControllerBase
 {
     [HttpGet]
-    public async Task<ActionResult> GetAll(CancellationToken ct)
+    public async Task<ActionResult> GetAll([FromQuery] bool includeArchived, CancellationToken ct)
     {
-        var leagues = await dbContext.Leagues
-            .Where(l => l.IsActive)
-            .OrderBy(l => l.Name)
-            .Select(l => new { id = l.Id, name = l.Name, competitionId = l.CompetitionId, ownUserId = l.OwnUserId })
+        var query = dbContext.Leagues.AsQueryable();
+        if (!includeArchived)
+        {
+            query = query.Where(l => l.IsActive);
+        }
+
+        var leagues = await query
+            .OrderByDescending(l => l.IsActive)
+            .ThenBy(l => l.Name)
+            .Select(l => new { id = l.Id, name = l.Name, competitionId = l.CompetitionId, ownUserId = l.OwnUserId, isActive = l.IsActive })
             .ToListAsync(ct);
 
         return Ok(leagues);

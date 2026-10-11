@@ -22,6 +22,38 @@ namespace KickbaseAssistant.Infrastructure.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("KickbaseAssistant.Domain.Leagues.BalanceAlertSent", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("LeagueId")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<int>("MatchdayNumber")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTimeOffset>("SentAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Window")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LeagueId", "MatchdayNumber", "Window")
+                        .IsUnique();
+
+                    b.ToTable("BalanceAlertsSent");
+                });
+
             modelBuilder.Entity("KickbaseAssistant.Domain.Leagues.League", b =>
                 {
                     b.Property<string>("Id")
@@ -49,6 +81,51 @@ namespace KickbaseAssistant.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Leagues");
+                });
+
+            modelBuilder.Entity("KickbaseAssistant.Domain.Leagues.LeagueBalanceStatus", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<double>("Balance")
+                        .HasColumnType("double precision");
+
+                    b.Property<double>("CreditLimit")
+                        .HasColumnType("double precision");
+
+                    b.Property<string>("LeagueId")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<DateTimeOffset>("NextKickoffAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("NextMatchdayNumber")
+                        .HasColumnType("integer");
+
+                    b.PrimitiveCollection<string[]>("RosterGaps")
+                        .IsRequired()
+                        .HasColumnType("text[]");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LeagueId")
+                        .IsUnique();
+
+                    b.ToTable("LeagueBalanceStatuses");
                 });
 
             modelBuilder.Entity("KickbaseAssistant.Domain.Leagues.LeagueManagerStat", b =>
@@ -323,6 +400,9 @@ namespace KickbaseAssistant.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("character varying(50)");
 
+                    b.Property<int>("StatusCode")
+                        .HasColumnType("integer");
+
                     b.HasKey("Id");
 
                     b.HasIndex("PlayerId", "Date")
@@ -360,6 +440,9 @@ namespace KickbaseAssistant.Infrastructure.Migrations
                     b.Property<int>("Position")
                         .HasColumnType("integer");
 
+                    b.Property<int>("StatusCode")
+                        .HasColumnType("integer");
+
                     b.Property<string>("TeamId")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -379,6 +462,43 @@ namespace KickbaseAssistant.Infrastructure.Migrations
                     b.HasIndex("TeamId");
 
                     b.ToTable("Players");
+                });
+
+            modelBuilder.Entity("KickbaseAssistant.Domain.Players.PlayerMatchdayPerformance", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<int>("MatchdayNumber")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("MinutesPlayed")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("PlayerId")
+                        .IsRequired()
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<int>("Points")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("SeasonId")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<bool>("StartedInLineup")
+                        .HasColumnType("boolean");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PlayerId", "SeasonId", "MatchdayNumber")
+                        .IsUnique();
+
+                    b.ToTable("PlayerMatchdayPerformances");
                 });
 
             modelBuilder.Entity("KickbaseAssistant.Domain.Players.SellAlert", b =>
@@ -465,6 +585,50 @@ namespace KickbaseAssistant.Infrastructure.Migrations
                     b.ToTable("SquadPlayerScores");
                 });
 
+            modelBuilder.Entity("KickbaseAssistant.Domain.Players.TeamFixture", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("CompetitionId")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<int>("DifficultyTier")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("IsHome")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("MatchdayNumber")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("OpponentTeamId")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("OpponentTeamName")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("TeamId")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CompetitionId", "TeamId", "MatchdayNumber")
+                        .IsUnique();
+
+                    b.ToTable("TeamFixtures");
+                });
+
             modelBuilder.Entity("KickbaseAssistant.Domain.Leagues.SquadMembership", b =>
                 {
                     b.HasOne("KickbaseAssistant.Domain.Players.Player", "Player")
@@ -509,6 +673,17 @@ namespace KickbaseAssistant.Infrastructure.Migrations
                     b.Navigation("Player");
                 });
 
+            modelBuilder.Entity("KickbaseAssistant.Domain.Players.PlayerMatchdayPerformance", b =>
+                {
+                    b.HasOne("KickbaseAssistant.Domain.Players.Player", "Player")
+                        .WithMany("MatchdayPerformances")
+                        .HasForeignKey("PlayerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Player");
+                });
+
             modelBuilder.Entity("KickbaseAssistant.Domain.Players.SellAlert", b =>
                 {
                     b.HasOne("KickbaseAssistant.Domain.Players.Player", "Player")
@@ -538,6 +713,8 @@ namespace KickbaseAssistant.Infrastructure.Migrations
                     b.Navigation("MarketScanResults");
 
                     b.Navigation("MarketValueSnapshots");
+
+                    b.Navigation("MatchdayPerformances");
 
                     b.Navigation("SellAlerts");
 

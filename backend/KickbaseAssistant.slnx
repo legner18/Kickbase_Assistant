@@ -5,4 +5,7 @@
     <Project Path="src/KickbaseAssistant.Infrastructure/KickbaseAssistant.Infrastructure.csproj" />
     <Project Path="src/KickbaseAssistant.Worker/KickbaseAssistant.Worker.csproj" />
   </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/KickbaseAssistant.Domain.Tests/KickbaseAssistant.Domain.Tests.csproj" />
+  </Folder>
 </Solution>

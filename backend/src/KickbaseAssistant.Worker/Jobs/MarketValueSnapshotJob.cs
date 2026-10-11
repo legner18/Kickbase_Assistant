@@ -3,6 +3,7 @@ using KickbaseAssistant.Domain.Players;
 using KickbaseAssistant.Infrastructure.Data;
 using KickbaseAssistant.Infrastructure.Kickbase;
 using KickbaseAssistant.Infrastructure.Kickbase.Dtos;
+using KickbaseAssistant.Infrastructure.Leagues;
 using Microsoft.EntityFrameworkCore;
 using Quartz;
 
@@ -10,8 +11,12 @@ namespace KickbaseAssistant.Worker.Jobs;
 
 /// <summary>
 /// Phase 2 (Marktwert-Tracker): syncs the user's leagues and their squads, then stores one
-/// MarketValueSnapshot per player per day. Runs once daily, after Kickbase's own market value
-/// update (community knowledge: values typically update in the evening, CET).
+/// MarketValueSnapshot per player per day. Trigger fires every minute from 22:01 to 22:45 (see
+/// Program.cs) - Kickbase's own market value update runs at 22:00, and a single fixed-time run
+/// would regularly race it and lock in a false "no change" snapshot. A player is only snapshotted
+/// once the fetched market value actually differs from the last stored value, or once the window's
+/// last run (22:45) is reached - whichever comes first. That also means later runs within the same
+/// window are cheap no-ops for players already snapshotted today.
 ///
 /// Also owns SquadMembership (full-refresh per league each run) - the only place that records
 /// *which* league a squad player actually belongs to, since Player.IsInSquad itself is a single
@@ -19,40 +24,23 @@ namespace KickbaseAssistant.Worker.Jobs;
 /// </summary>
 public class MarketValueSnapshotJob(
     KickbaseApiClient kickbaseApiClient,
+    LeagueSyncService leagueSyncService,
     AppDbContext dbContext,
     ILogger<MarketValueSnapshotJob> logger) : IJob
 {
+    private static readonly TimeZoneInfo GermanyTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Europe/Berlin");
+    private const int SnapshotWindowCutoffHour = 22;
+    private const int SnapshotWindowCutoffMinute = 45;
+
     public async Task Execute(IJobExecutionContext context)
     {
         var ct = context.CancellationToken;
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var isLastRunOfWindow = IsAtOrPastCutoff(TimeZoneInfo.ConvertTime(DateTimeOffset.UtcNow, GermanyTimeZone));
+
+        await leagueSyncService.SyncAsync(ct);
 
         var me = await kickbaseApiClient.GetMeAsync(ct);
-        var remoteLeagues = await kickbaseApiClient.GetLeaguesAsync(ct);
-
-        foreach (var remoteLeague in remoteLeagues)
-        {
-            var league = await dbContext.Leagues.FindAsync([remoteLeague.Id], ct);
-            if (league is null)
-            {
-                league = new League
-                {
-                    Id = remoteLeague.Id,
-                    Name = remoteLeague.Name,
-                    CompetitionId = remoteLeague.CompetitionId,
-                    OwnUserId = me.Id,
-                };
-                dbContext.Leagues.Add(league);
-            }
-            else
-            {
-                league.Name = remoteLeague.Name;
-                league.CompetitionId = remoteLeague.CompetitionId;
-            }
-        }
-
-        await dbContext.SaveChangesAsync(ct);
-
         var activeLeagues = await dbContext.Leagues.Where(l => l.IsActive).ToListAsync(ct);
         var snapshottedPlayerIds = new HashSet<string>();
         var teamNamesByCompetition = new Dictionary<string, Dictionary<string, string>>();
@@ -126,6 +114,7 @@ public class MarketValueSnapshotJob(
                 player.MarketValue = remotePlayer.MarketValue;
                 player.TotalPoints = remotePlayer.TotalPoints;
                 player.AveragePoints = remotePlayer.AveragePoints;
+                player.StatusCode = remotePlayer.Status;
                 player.CompetitionId = competitionId;
                 player.IsInSquad = true;
                 player.LastSeenAt = DateTimeOffset.UtcNow;
@@ -148,12 +137,22 @@ public class MarketValueSnapshotJob(
                     .OrderByDescending(s => s.Date)
                     .FirstOrDefaultAsync(ct);
 
+                var hasActuallyChanged = previous is not null && previous.MarketValue != remotePlayer.MarketValue;
+                if (!hasActuallyChanged && !isLastRunOfWindow)
+                {
+                    // Kickbase hat den Wert für diesen Spieler vermutlich noch nicht aktualisiert -
+                    // beim nächsten Minuten-Tick innerhalb des Fensters erneut versuchen, statt
+                    // einen verfrühten "0 Änderung"-Snapshot festzuschreiben.
+                    continue;
+                }
+
                 dbContext.MarketValueSnapshots.Add(new MarketValueSnapshot
                 {
                     PlayerId = remotePlayer.Id,
                     Date = today,
                     MarketValue = remotePlayer.MarketValue,
                     MarketValueChange = remotePlayer.MarketValue - (previous?.MarketValue ?? remotePlayer.MarketValue),
+                    StatusCode = remotePlayer.Status,
                 });
                 snapshotsCreated++;
             }
@@ -165,4 +164,8 @@ public class MarketValueSnapshotJob(
             "Marktwert-Snapshot fertig: {LeagueCount} Ligen, {PlayerCount} Spieler aktualisiert, {SnapshotCount} neue Snapshots.",
             activeLeagues.Count, playersUpdated, snapshotsCreated);
     }
+
+    private static bool IsAtOrPastCutoff(DateTimeOffset germanyLocalTime) =>
+        germanyLocalTime.Hour > SnapshotWindowCutoffHour
+        || (germanyLocalTime.Hour == SnapshotWindowCutoffHour && germanyLocalTime.Minute >= SnapshotWindowCutoffMinute);
 }

@@ -1,4 +1,5 @@
 import { Routes } from '@angular/router';
+import { ArchivedLeaguesComponent } from './pages/archived-leagues/archived-leagues.component';
 import { DashboardComponent } from './pages/dashboard/dashboard.component';
 import { LeagueAnalysisComponent } from './pages/league-analysis/league-analysis.component';
 import { LiveComponent } from './pages/live/live.component';
@@ -17,5 +18,6 @@ export const routes: Routes = [
   { path: 'live', component: LiveComponent },
   { path: 'preis-leistung', component: ValueRankingComponent },
   { path: 'spieler/:id', component: PlayerDetailComponent },
+  { path: 'archiv', component: ArchivedLeaguesComponent },
   { path: '**', redirectTo: '' },
 ];

@@ -73,6 +73,16 @@ export class PlayerDetailComponent {
     }
   }
 
+  fixtureTierClass(tier: number): string {
+    if (tier <= 2) {
+      return 'badge-good';
+    }
+    if (tier === 3) {
+      return 'badge-warning';
+    }
+    return 'badge-critical';
+  }
+
   latestChange(): number | null {
     const h = this.history();
     return h.length > 0 ? h[h.length - 1].change : null;

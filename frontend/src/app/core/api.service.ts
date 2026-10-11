@@ -4,6 +4,7 @@ import { Observable } from 'rxjs';
 import { API_BASE_URL } from './api-config';
 import {
   League,
+  LeagueBalanceStatus,
   LeagueManager,
   LeagueTransfer,
   ManagerStat,
@@ -22,12 +23,20 @@ export class ApiService {
   private readonly http = inject(HttpClient);
   private readonly base = API_BASE_URL;
 
-  getLeagues(): Observable<League[]> {
-    return this.http.get<League[]>(`${this.base}/api/leagues`);
+  getLeagues(includeArchived = false): Observable<League[]> {
+    const params: Record<string, string> = {};
+    if (includeArchived) {
+      params['includeArchived'] = 'true';
+    }
+    return this.http.get<League[]>(`${this.base}/api/leagues`, { params });
   }
 
   getManagers(leagueId: string): Observable<LeagueManager[]> {
     return this.http.get<LeagueManager[]>(`${this.base}/api/leagues/${leagueId}/managers`);
+  }
+
+  getBalanceStatus(leagueId: string): Observable<LeagueBalanceStatus> {
+    return this.http.get<LeagueBalanceStatus>(`${this.base}/api/leagues/${leagueId}/balance-status`);
   }
 
   getSquad(leagueId: string, managerId?: string): Observable<Player[]> {

@@ -50,4 +50,8 @@ export class ValueRankingComponent {
   openPlayer(playerId: string): void {
     this.router.navigate(['/spieler', playerId]);
   }
+
+  isDeal(entry: ValueRankingEntry): boolean {
+    return entry.fairValueDeltaPercent >= 30;
+  }
 }

@@ -3,6 +3,17 @@ export interface League {
   name: string;
   competitionId: string;
   ownUserId: string;
+  isActive: boolean;
+}
+
+export interface LeagueBalanceStatus {
+  balance: number;
+  creditLimit: number;
+  status: 'Green' | 'Yellow' | 'Red';
+  nextMatchdayNumber: number;
+  nextKickoffAt: string;
+  rosterGaps: string[];
+  updatedAt: string;
 }
 
 export interface LeagueManager {
@@ -20,6 +31,7 @@ export interface Player {
   marketValue: number;
   totalPoints: number;
   averagePoints: number;
+  statusCode: number;
   lastSeenAt: string;
   latestLineupStatus: string | null;
   latestMarketValueChange: number | null;
@@ -61,6 +73,9 @@ export interface ValueRankingEntry {
   totalPoints: number;
   averagePoints: number;
   pricePerPoint: number;
+  pointsPerMillion: number;
+  fairValue: number;
+  fairValueDeltaPercent: number;
 }
 
 export interface MarketValueHistoryPoint {
@@ -117,6 +132,14 @@ export interface PlayerSellAlert {
   acknowledged: boolean;
 }
 
+export interface UpcomingFixture {
+  matchdayNumber: number;
+  opponentTeamId: string;
+  opponentTeamName: string | null;
+  isHome: boolean;
+  difficultyTier: number;
+}
+
 export interface PlayerDetail {
   id: string;
   name: string;
@@ -126,10 +149,18 @@ export interface PlayerDetail {
   marketValue: number;
   totalPoints: number;
   averagePoints: number;
+  statusCode: number;
   lastSeenAt: string;
+  fairValue: number;
+  fairValueDeltaPercent: number;
+  pointsPerMillion: number;
+  medianPoints: number | null;
+  startingXiQuota: number | null;
+  pointsPerMinute: number | null;
   lineupHistory: LineupHistoryEntry[];
   sellAlerts: PlayerSellAlert[];
   owners: PlayerOwner[];
+  upcomingFixtures: UpcomingFixture[];
 }
 
 export interface ManagerStat {

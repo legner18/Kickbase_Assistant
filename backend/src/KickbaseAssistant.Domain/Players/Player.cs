@@ -11,6 +11,7 @@ public class Player
     public int MarketValue { get; set; }
     public int TotalPoints { get; set; }
     public int AveragePoints { get; set; }
+    public int StatusCode { get; set; }
     public bool IsInSquad { get; set; }
     public DateTimeOffset LastSeenAt { get; set; }
 
@@ -19,4 +20,5 @@ public class Player
     public ICollection<SellAlert> SellAlerts { get; set; } = [];
     public ICollection<MarketScanResult> MarketScanResults { get; set; } = [];
     public ICollection<SquadPlayerScore> SquadPlayerScores { get; set; } = [];
+    public ICollection<PlayerMatchdayPerformance> MatchdayPerformances { get; set; } = [];
 }

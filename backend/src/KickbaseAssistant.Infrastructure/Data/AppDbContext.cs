@@ -16,6 +16,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<LeagueTransfer> LeagueTransfers => Set<LeagueTransfer>();
     public DbSet<LeagueManagerStat> LeagueManagerStats => Set<LeagueManagerStat>();
     public DbSet<SquadMembership> SquadMemberships => Set<SquadMembership>();
+    public DbSet<PlayerMatchdayPerformance> PlayerMatchdayPerformances => Set<PlayerMatchdayPerformance>();
+    public DbSet<BalanceAlertSent> BalanceAlertsSent => Set<BalanceAlertSent>();
+    public DbSet<LeagueBalanceStatus> LeagueBalanceStatuses => Set<LeagueBalanceStatus>();
+    public DbSet<TeamFixture> TeamFixtures => Set<TeamFixture>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -55,11 +59,49 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
                 .WithOne(r => r.Player)
                 .HasForeignKey(r => r.PlayerId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            p.HasMany(x => x.MatchdayPerformances)
+                .WithOne(m => m.Player)
+                .HasForeignKey(m => m.PlayerId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         builder.Entity<MarketValueSnapshot>(s =>
         {
             s.HasIndex(x => new { x.PlayerId, x.Date }).IsUnique();
+        });
+
+        builder.Entity<PlayerMatchdayPerformance>(m =>
+        {
+            m.Property(x => x.SeasonId).IsRequired().HasMaxLength(20);
+
+            m.HasIndex(x => new { x.PlayerId, x.SeasonId, x.MatchdayNumber }).IsUnique();
+        });
+
+        builder.Entity<BalanceAlertSent>(a =>
+        {
+            a.Property(x => x.LeagueId).IsRequired().HasMaxLength(50);
+            a.Property(x => x.Window).HasConversion<string>().HasMaxLength(20);
+
+            a.HasIndex(x => new { x.LeagueId, x.MatchdayNumber, x.Window }).IsUnique();
+        });
+
+        builder.Entity<LeagueBalanceStatus>(s =>
+        {
+            s.Property(x => x.LeagueId).IsRequired().HasMaxLength(50);
+            s.Property(x => x.Status).HasConversion<string>().HasMaxLength(10);
+
+            s.HasIndex(x => x.LeagueId).IsUnique();
+        });
+
+        builder.Entity<TeamFixture>(f =>
+        {
+            f.Property(x => x.CompetitionId).IsRequired().HasMaxLength(50);
+            f.Property(x => x.TeamId).IsRequired().HasMaxLength(50);
+            f.Property(x => x.OpponentTeamId).IsRequired().HasMaxLength(50);
+            f.Property(x => x.OpponentTeamName).HasMaxLength(200);
+
+            f.HasIndex(x => new { x.CompetitionId, x.TeamId, x.MatchdayNumber }).IsUnique();
         });
 
         builder.Entity<LineupPrediction>(l =>
