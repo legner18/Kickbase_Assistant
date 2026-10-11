@@ -15,6 +15,7 @@ import {
   PlayerDetail,
   PlayerSearchResult,
   SellAlert,
+  SellPlan,
   ValueRankingEntry,
 } from './models';
 
@@ -37,6 +38,14 @@ export class ApiService {
 
   getBalanceStatus(leagueId: string): Observable<LeagueBalanceStatus> {
     return this.http.get<LeagueBalanceStatus>(`${this.base}/api/leagues/${leagueId}/balance-status`);
+  }
+
+  getSellPlan(leagueId: string): Observable<SellPlan> {
+    return this.http.get<SellPlan>(`${this.base}/api/leagues/${leagueId}/sell-plan`);
+  }
+
+  toggleSellLock(leagueId: string, playerId: string): Observable<{ locked: boolean }> {
+    return this.http.post<{ locked: boolean }>(`${this.base}/api/leagues/${leagueId}/sell-plan/lock/${playerId}`, {});
   }
 
   getSquad(leagueId: string, managerId?: string): Observable<Player[]> {

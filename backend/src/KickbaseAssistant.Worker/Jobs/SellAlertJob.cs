@@ -51,6 +51,13 @@ public class SellAlertJob(
             {
                 newAlerts.Add((player, reason));
             }
+
+            var trendReason = await CheckTrendFlatteningAsync(player, ct);
+            if (trendReason is not null
+                && await SellAlertHelper.TryCreateAsync(dbContext, player.Id, SellAlertSignal.TrendFlattening, trendReason, ct))
+            {
+                newAlerts.Add((player, trendReason));
+            }
         }
 
         var competitionIds = squadPlayers.Select(p => p.CompetitionId.ToString()).Distinct().ToList();
@@ -133,6 +140,47 @@ public class SellAlertJob(
         }
 
         return null;
+    }
+
+    /// <summary>
+    /// Umbauplan "Verkaufs-Timing und Trend-Alarm": erkennt eine abflachende Steigerung ("Peak
+    /// naht"), bevor der Wert tatsächlich fällt - das deckt CheckMomentumAsync oben nicht ab, das
+    /// nur auf bereits fallende Werte reagiert. Arbeitet auf den letzten 3 Tagen, prozentual
+    /// (siehe MarketValueTrendAnalyzer).
+    /// </summary>
+    private async Task<string?> CheckTrendFlatteningAsync(Player player, CancellationToken ct)
+    {
+        var lastThree = await dbContext.MarketValueSnapshots
+            .Where(s => s.PlayerId == player.Id)
+            .OrderByDescending(s => s.Date)
+            .Take(3)
+            .ToListAsync(ct);
+
+        if (lastThree.Count < 3)
+        {
+            return null;
+        }
+
+        var percentChanges = lastThree
+            .OrderBy(s => s.Date)
+            .Select(s =>
+            {
+                var previousValue = s.MarketValue - s.MarketValueChange;
+                return previousValue > 0 ? s.MarketValueChange / (double)previousValue * 100 : 0;
+            })
+            .ToList();
+
+        var status = MarketValueTrendAnalyzer.Analyze(percentChanges);
+        var latestPercent = percentChanges[^1];
+
+        return status switch
+        {
+            MarketValueTrendStatus.PeakApproaching =>
+                $"Peak naht: Marktwert-Steigerung flacht seit 3 Tagen ab (zuletzt {latestPercent:+0.0;-0.0}%/Tag)",
+            MarketValueTrendStatus.SellSignal when latestPercent > 0 =>
+                $"Steigerung unter {MarketValueTrendAnalyzer.SellThresholdPercent:0.0}%/Tag gefallen (zuletzt {latestPercent:+0.0;-0.0}%) - jetzt verkaufen",
+            _ => null,
+        };
     }
 
     private async Task PushAlertsAsync(List<(Player Player, string Reason)> alerts, CancellationToken ct)

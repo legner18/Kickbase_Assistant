@@ -3,6 +3,7 @@ using KickbaseAssistant.Domain.Players;
 using KickbaseAssistant.Infrastructure.Data;
 using KickbaseAssistant.Infrastructure.Kickbase;
 using KickbaseAssistant.Infrastructure.Notifications;
+using KickbaseAssistant.Infrastructure.Players;
 using Microsoft.EntityFrameworkCore;
 using Quartz;
 
@@ -15,14 +16,19 @@ namespace KickbaseAssistant.Worker.Jobs;
 /// einzige Komponente, die Kickbase direkt anspricht.
 ///
 /// Pusht (ntfy) einmalig pro (Liga, Spieltag, Fenster), wenn der Status beim T-24h- bzw.
-/// T-3h-Fenster vor Anpfiff nicht grün ist - siehe BalanceAlertSent für die Dedup-Logik.
+/// T-3h-Fenster vor Anpfiff nicht grün ist - siehe BalanceAlertSent für die Dedup-Logik. Am
+/// Vorabend des Spieltags (21 Uhr) trägt der Push zusätzlich eine Verkaufsplaner-Empfehlung
+/// ("Deadline-Plan"), damit noch vor dem 22-Uhr-MW-Update reagiert werden kann.
 /// </summary>
 public class BalanceGuardJob(
     KickbaseApiClient kickbaseApiClient,
     NtfyPushService ntfyPushService,
+    PlayerMetricsService playerMetricsService,
     AppDbContext dbContext,
     ILogger<BalanceGuardJob> logger) : IJob
 {
+    private static readonly TimeZoneInfo GermanyTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Europe/Berlin");
+
     private static readonly (BalanceAlertWindow Window, TimeSpan Threshold)[] AlertWindows =
     [
         (BalanceAlertWindow.TwentyFourHour, TimeSpan.FromHours(24)),
@@ -123,7 +129,67 @@ public class BalanceGuardJob(
                     await TrySendAlertAsync(league, nextMatchday.Day, window, status, budget.Budget, kickoff, ct);
                 }
             }
+
+            if (IsDeadlinePlanHour(now, kickoff))
+            {
+                await TrySendDeadlinePlanAsync(league, nextMatchday.Day, squadPlayers, budget.Budget, kickoff, ct);
+            }
         }
+    }
+
+    private static bool IsDeadlinePlanHour(DateTimeOffset now, DateTimeOffset kickoff)
+    {
+        var nowLocal = TimeZoneInfo.ConvertTime(now, GermanyTimeZone);
+        var kickoffLocal = TimeZoneInfo.ConvertTime(kickoff, GermanyTimeZone);
+        return kickoffLocal.Date == nowLocal.Date.AddDays(1) && nowLocal.Hour == 21;
+    }
+
+    private async Task TrySendDeadlinePlanAsync(
+        League league, int matchdayNumber, List<Player> squadPlayers, double balance, DateTimeOffset kickoff, CancellationToken ct)
+    {
+        var alreadySent = await dbContext.BalanceAlertsSent.AnyAsync(
+            a => a.LeagueId == league.Id && a.MatchdayNumber == matchdayNumber && a.Window == BalanceAlertWindow.DeadlinePlan, ct);
+        if (alreadySent)
+        {
+            return;
+        }
+
+        dbContext.BalanceAlertsSent.Add(new BalanceAlertSent
+        {
+            LeagueId = league.Id,
+            MatchdayNumber = matchdayNumber,
+            Window = BalanceAlertWindow.DeadlinePlan,
+            SentAt = DateTimeOffset.UtcNow,
+        });
+
+        var lockedIds = (await dbContext.PlayerSaleLocks.Where(l => l.LeagueId == league.Id).Select(l => l.PlayerId).ToListAsync(ct)).ToHashSet();
+        var candidates = new List<SellCandidate>();
+        foreach (var player in squadPlayers)
+        {
+            var expectedPoints = await playerMetricsService.ComputeExpectedPointsAsync(player.Id, player.AveragePoints, ct);
+            candidates.Add(new SellCandidate(player.Id, player.Name, player.Position, player.MarketValue, expectedPoints, lockedIds.Contains(player.Id)));
+        }
+
+        var best = SellPlanOptimizer.FindBestCombinations(candidates, balance, targetBalance: 0, maxResults: 1).FirstOrDefault();
+
+        string message;
+        if (best.PlayerIds is null || best.PlayerIds.Count == 0)
+        {
+            message = best.PlayerIds is null
+                ? "Keine Verkaufs-Kombination gefunden, die den Kontostand ausgleicht, ohne die Mindestbesetzung zu verletzen - Kader prüfen."
+                : "Kontostand reicht bereits aus, kein Verkauf nötig.";
+        }
+        else
+        {
+            var names = string.Join(", ", best.PlayerIds.Select(id => candidates.First(c => c.PlayerId == id).PlayerName));
+            message = $"Verkaufe {names} ({best.Proceeds:+#,0 €;-#,0 €;0 €}) -> Kontostand danach {best.ResultingBalance:+#,0 €;-#,0 €;0 €}, {best.LostExpectedPoints:0.#} erwartete Punkte weniger.";
+        }
+
+        await ntfyPushService.SendAsync(
+            title: $"Deadline-Plan {league.Name} - vor dem 22-Uhr-Update verkaufen ⏰",
+            message: message,
+            tags: "hourglass_flowing_sand,money_with_wings",
+            ct: ct);
     }
 
     private async Task TrySendAlertAsync(

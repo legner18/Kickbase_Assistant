@@ -501,6 +501,32 @@ namespace KickbaseAssistant.Infrastructure.Migrations
                     b.ToTable("PlayerMatchdayPerformances");
                 });
 
+            modelBuilder.Entity("KickbaseAssistant.Domain.Players.PlayerSaleLock", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("LeagueId")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("PlayerId")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LeagueId", "PlayerId")
+                        .IsUnique();
+
+                    b.ToTable("PlayerSaleLocks");
+                });
+
             modelBuilder.Entity("KickbaseAssistant.Domain.Players.SellAlert", b =>
                 {
                     b.Property<long>("Id")

@@ -1,0 +1,91 @@
+<div class="card-header page-header">
+  <div>
+    <h1>Verkaufsplaner</h1>
+    <p class="hint">
+      Sucht die Verkaufs-Kombination, die den Kontostand ausgleicht und dabei am wenigsten erwartete Punkte kostet -
+      keine automatische Ausführung, nur eine Empfehlung. Kaufpreis/Gewinn-Verlust fließen bewusst nicht ein.
+    </p>
+  </div>
+  <button class="icon-btn" (click)="refresh()" title="Aktualisieren">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 12a9 9 0 1 1-2.6-6.4" /><path d="M21 4v5h-5" />
+    </svg>
+  </button>
+</div>
+
+@if (loading()) {
+  <div class="card"><div class="skeleton" style="height: 240px"></div></div>
+} @else if (plan(); as p) {
+  <div class="card-grid">
+    <div class="card stat-card">
+      <div>
+        <div class="stat-label">Aktueller Kontostand</div>
+        <div class="stat" [class.negative]="p.balance < 0">{{ p.balance | number: '1.0-0' : 'de' }} €</div>
+      </div>
+    </div>
+  </div>
+
+  @if (p.balance >= 0) {
+    <p class="empty-state">Kontostand ist bereits im Plus - kein Verkauf nötig.</p>
+  } @else if (p.combinations.length === 0) {
+    <p class="empty-state">
+      Keine Verkaufs-Kombination gefunden, die den Kontostand ausgleicht, ohne die Mindestbesetzung (1 TW, 3 ABW, 2 MF,
+      1 ST) zu verletzen. Prüfe, ob zu viele Spieler gesperrt sind.
+    </p>
+  } @else {
+    <div class="card">
+      <div class="card-header"><h2>Empfehlungen</h2></div>
+      @for (combo of p.combinations; track $index; let i = $index) {
+        <div class="sell-combo" [class.sell-combo-best]="i === 0">
+          <div class="sell-combo-header">
+            <strong>{{ i === 0 ? 'Beste Option' : 'Alternative ' + i }}</strong>
+            <span class="badge badge-neutral">{{ combo.lostExpectedPoints | number: '1.0-1' }} Pkt. weniger erwartet</span>
+          </div>
+          @if (combo.playerNames.length === 0) {
+            <p class="hint">Keine Verkäufe nötig.</p>
+          } @else {
+            <p class="hint">{{ combo.playerNames.join(', ') }}</p>
+          }
+          <div class="sell-combo-meta">
+            <span>+{{ combo.proceeds | number: '1.0-0' : 'de' }} €</span>
+            <span>Kontostand danach: <strong [class.positive]="combo.resultingBalance >= 0">{{ combo.resultingBalance | number: '1.0-0' : 'de' }} €</strong></span>
+            <span>Restkader: {{ combo.remainingSquadSize }}</span>
+          </div>
+        </div>
+      }
+    </div>
+  }
+
+  <div class="card card-table">
+    <div class="card-header" style="padding: 1.1rem 1.3rem 0">
+      <h2>Kader</h2>
+      <p class="hint">"Nicht verkaufen" sperrt einen Spieler für den Planer, unabhängig von den Empfehlungen oben.</p>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>Spieler</th>
+          <th>Pos</th>
+          <th>Marktwert</th>
+          <th>Ø Punkte (letzte 5)</th>
+          <th>Nicht verkaufen</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (candidate of p.candidates; track candidate.playerId) {
+          <tr>
+            <td class="player-name-cell" (click)="openPlayer(candidate.playerId)">{{ candidate.playerName }}</td>
+            <td>{{ positionLabels[candidate.position] ?? '–' }}</td>
+            <td>{{ candidate.marketValue | number: '1.0-0' : 'de' }} €</td>
+            <td>{{ candidate.expectedPoints | number: '1.0-1' }}</td>
+            <td>
+              <input type="checkbox" [checked]="candidate.locked" (change)="toggleLock(candidate.playerId)" />
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+} @else {
+  <p class="empty-state">Keine Kader-Daten für diese Liga.</p>
+}

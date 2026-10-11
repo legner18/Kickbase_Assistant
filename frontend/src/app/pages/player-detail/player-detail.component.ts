@@ -16,6 +16,7 @@ const SIGNAL_LABELS: Record<string, string> = {
   MarketValueDrop: 'Marktwert fällt',
   LineupDowngrade: 'Startelf-Downgrade',
   InjuryNews: 'Verletzungs-News',
+  TrendFlattening: 'Trend flacht ab',
 };
 
 @Component({

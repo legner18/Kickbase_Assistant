@@ -6,6 +6,7 @@ import { LiveComponent } from './pages/live/live.component';
 import { MarketScanComponent } from './pages/market-scan/market-scan.component';
 import { PlayerDetailComponent } from './pages/player-detail/player-detail.component';
 import { SellAlertsComponent } from './pages/sell-alerts/sell-alerts.component';
+import { SellPlanComponent } from './pages/sell-plan/sell-plan.component';
 import { SquadComponent } from './pages/squad/squad.component';
 import { ValueRankingComponent } from './pages/value-ranking/value-ranking.component';
 
@@ -13,6 +14,7 @@ export const routes: Routes = [
   { path: '', component: DashboardComponent },
   { path: 'kader', component: SquadComponent },
   { path: 'verkaufs-alarm', component: SellAlertsComponent },
+  { path: 'verkaufsplaner', component: SellPlanComponent },
   { path: 'transfermarkt', component: MarketScanComponent },
   { path: 'liga-analyse', component: LeagueAnalysisComponent },
   { path: 'live', component: LiveComponent },

@@ -5,6 +5,7 @@ public enum SellAlertSignal
     MarketValueDrop,
     LineupDowngrade,
     InjuryNews,
+    TrendFlattening,
 }
 
 public class SellAlert

@@ -16,6 +16,30 @@ export interface LeagueBalanceStatus {
   updatedAt: string;
 }
 
+export interface SellPlanCandidate {
+  playerId: string;
+  playerName: string;
+  position: number;
+  marketValue: number;
+  expectedPoints: number;
+  locked: boolean;
+}
+
+export interface SellPlanCombination {
+  playerIds: string[];
+  playerNames: string[];
+  proceeds: number;
+  lostExpectedPoints: number;
+  remainingSquadSize: number;
+  resultingBalance: number;
+}
+
+export interface SellPlan {
+  balance: number;
+  candidates: SellPlanCandidate[];
+  combinations: SellPlanCombination[];
+}
+
 export interface LeagueManager {
   managerId: string;
   managerName: string;

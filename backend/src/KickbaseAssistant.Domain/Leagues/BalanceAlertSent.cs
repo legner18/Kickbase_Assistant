@@ -4,6 +4,10 @@ public enum BalanceAlertWindow
 {
     TwentyFourHour,
     ThreeHour,
+    /// <summary>Umbauplan "Deadline-Plan": Erinnerung am Vorabend des Spieltags, 21 Uhr, vor dem
+    /// letzten MW-Update um 22 Uhr - trägt im Gegensatz zu den anderen beiden Fenstern eine
+    /// Verkaufsplaner-Empfehlung statt nur eines Status-Hinweises.</summary>
+    DeadlinePlan,
 }
 
 /// <summary>

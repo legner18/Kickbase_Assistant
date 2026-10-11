@@ -31,20 +31,36 @@ public class PlayerMetricsService(AppDbContext dbContext)
         return players.ToDictionary(p => p.Id, p => FairValueCalculator.Predict(slope, intercept, p.AveragePoints));
     }
 
-    public async Task<PlayerMatchdayMetrics?> ComputeMatchdayMetricsAsync(string playerId, CancellationToken ct)
+    /// <summary>
+    /// Umbauplan "Verkaufsplaner": Ø Punkte der letzten (bis zu) 5 gespielten Spieltage der
+    /// laufenden Saison - "bis die Prognose steht" laut Plan. Fällt auf den übergebenen
+    /// Saison-Durchschnitt zurück, wenn (noch) keine Spieltags-Daten vorliegen.
+    /// </summary>
+    public async Task<double> ComputeExpectedPointsAsync(string playerId, double fallbackAveragePoints, CancellationToken ct)
     {
-        var seasonIds = await dbContext.PlayerMatchdayPerformances
-            .Where(p => p.PlayerId == playerId)
-            .Select(p => p.SeasonId)
-            .Distinct()
+        var currentSeasonId = await ResolveCurrentSeasonIdAsync(playerId, ct);
+        if (currentSeasonId is null)
+        {
+            return fallbackAveragePoints;
+        }
+
+        var recentPoints = await dbContext.PlayerMatchdayPerformances
+            .Where(p => p.PlayerId == playerId && p.SeasonId == currentSeasonId && p.MinutesPlayed > 0)
+            .OrderByDescending(p => p.MatchdayNumber)
+            .Take(5)
+            .Select(p => p.Points)
             .ToListAsync(ct);
 
-        if (seasonIds.Count == 0)
+        return recentPoints.Count > 0 ? recentPoints.Average() : fallbackAveragePoints;
+    }
+
+    public async Task<PlayerMatchdayMetrics?> ComputeMatchdayMetricsAsync(string playerId, CancellationToken ct)
+    {
+        var currentSeasonId = await ResolveCurrentSeasonIdAsync(playerId, ct);
+        if (currentSeasonId is null)
         {
             return null;
         }
-
-        var currentSeasonId = seasonIds.OrderByDescending(s => int.TryParse(s, out var value) ? value : 0).First();
 
         var matchdays = await dbContext.PlayerMatchdayPerformances
             .Where(p => p.PlayerId == playerId && p.SeasonId == currentSeasonId)
@@ -67,6 +83,19 @@ public class PlayerMetricsService(AppDbContext dbContext)
         }
 
         return new PlayerMatchdayMetrics(median, startingXiQuota, pointsPerMinute);
+    }
+
+    private async Task<string?> ResolveCurrentSeasonIdAsync(string playerId, CancellationToken ct)
+    {
+        var seasonIds = await dbContext.PlayerMatchdayPerformances
+            .Where(p => p.PlayerId == playerId)
+            .Select(p => p.SeasonId)
+            .Distinct()
+            .ToListAsync(ct);
+
+        return seasonIds.Count == 0
+            ? null
+            : seasonIds.OrderByDescending(s => int.TryParse(s, out var value) ? value : 0).First();
     }
 
     private static double Median(List<double> values)

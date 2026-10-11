@@ -20,6 +20,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<BalanceAlertSent> BalanceAlertsSent => Set<BalanceAlertSent>();
     public DbSet<LeagueBalanceStatus> LeagueBalanceStatuses => Set<LeagueBalanceStatus>();
     public DbSet<TeamFixture> TeamFixtures => Set<TeamFixture>();
+    public DbSet<PlayerSaleLock> PlayerSaleLocks => Set<PlayerSaleLock>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -102,6 +103,14 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             f.Property(x => x.OpponentTeamName).HasMaxLength(200);
 
             f.HasIndex(x => new { x.CompetitionId, x.TeamId, x.MatchdayNumber }).IsUnique();
+        });
+
+        builder.Entity<PlayerSaleLock>(l =>
+        {
+            l.Property(x => x.LeagueId).IsRequired().HasMaxLength(50);
+            l.Property(x => x.PlayerId).IsRequired().HasMaxLength(50);
+
+            l.HasIndex(x => new { x.LeagueId, x.PlayerId }).IsUnique();
         });
 
         builder.Entity<LineupPrediction>(l =>

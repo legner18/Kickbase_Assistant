@@ -1,0 +1,40 @@
+.hint {
+  margin: 0.15rem 0 0;
+  max-width: 70ch;
+}
+
+.sell-combo {
+  padding: 0.9rem 1.3rem;
+  border-top: 1px solid var(--border);
+}
+
+.sell-combo:first-of-type {
+  border-top: none;
+}
+
+.sell-combo-best {
+  background: color-mix(in srgb, var(--status-good) 8%, transparent);
+}
+
+.sell-combo-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.player-name-cell {
+  cursor: pointer;
+}
+
+.player-name-cell:hover {
+  text-decoration: underline;
+}
+
+.sell-combo-meta {
+  display: flex;
+  gap: 1.25rem;
+  margin-top: 0.4rem;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
