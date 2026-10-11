@@ -68,6 +68,8 @@
           <th>Spieler</th>
           <th>Pos</th>
           <th>Marktwert</th>
+          <th>Kaufpreis</th>
+          <th>Gewinn/Verlust</th>
           <th>Ø Punkte (letzte 5)</th>
           <th>Nicht verkaufen</th>
         </tr>
@@ -78,6 +80,22 @@
             <td class="player-name-cell" (click)="openPlayer(candidate.playerId)">{{ candidate.playerName }}</td>
             <td>{{ positionLabels[candidate.position] ?? '–' }}</td>
             <td>{{ candidate.marketValue | number: '1.0-0' : 'de' }} €</td>
+            <td>
+              @if (candidate.purchasePrice !== null) {
+                {{ candidate.purchasePrice | number: '1.0-0' : 'de' }} €
+              } @else {
+                <span class="empty-state">–</span>
+              }
+            </td>
+            <td>
+              @if (candidate.profitLoss !== null) {
+                <span [class]="candidate.profitLoss >= 0 ? 'positive' : 'negative'">
+                  {{ candidate.profitLoss >= 0 ? '+' : '' }}{{ candidate.profitLoss | number: '1.0-0' : 'de' }} €
+                </span>
+              } @else {
+                <span class="empty-state">–</span>
+              }
+            </td>
             <td>{{ candidate.expectedPoints | number: '1.0-1' }}</td>
             <td>
               <input type="checkbox" [checked]="candidate.locked" (change)="toggleLock(candidate.playerId)" />

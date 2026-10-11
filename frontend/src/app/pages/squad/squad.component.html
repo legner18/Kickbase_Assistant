@@ -41,6 +41,8 @@
           <th class="sortable" (click)="setSort('position')">Pos</th>
           <th>Team</th>
           <th class="sortable" (click)="setSort('marketValue')">Marktwert</th>
+          <th>Kaufpreis</th>
+          <th>Gewinn/Verlust</th>
           <th>Verlauf (21 Tage)</th>
           <th class="sortable" (click)="setSort('change')">Tendenz</th>
           <th class="sortable" (click)="setSort('totalPoints')">Punkte</th>
@@ -56,6 +58,22 @@
             <td>{{ positionLabels[player.position] ?? '–' }}</td>
             <td>{{ player.teamName ?? player.teamId }}</td>
             <td>{{ player.marketValue | number: '1.0-0' : 'de' }} €</td>
+            <td>
+              @if (player.purchasePrice !== null) {
+                {{ player.purchasePrice | number: '1.0-0' : 'de' }} €
+              } @else {
+                <span class="empty-state">–</span>
+              }
+            </td>
+            <td>
+              @if (player.purchasePrice !== null) {
+                <span [class]="player.marketValue - player.purchasePrice >= 0 ? 'positive' : 'negative'">
+                  {{ player.marketValue - player.purchasePrice >= 0 ? '+' : '' }}{{ player.marketValue - player.purchasePrice | number: '1.0-0' : 'de' }} €
+                </span>
+              } @else {
+                <span class="empty-state">–</span>
+              }
+            </td>
             <td><app-sparkline [values]="history()[player.id] ?? []" /></td>
             <td>
               @if (player.latestMarketValueChange !== null) {

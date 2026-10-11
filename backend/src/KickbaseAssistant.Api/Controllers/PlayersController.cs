@@ -1,3 +1,4 @@
+using KickbaseAssistant.Domain.Leagues;
 using KickbaseAssistant.Domain.Players;
 using KickbaseAssistant.Infrastructure.Data;
 using KickbaseAssistant.Infrastructure.Players;
@@ -65,6 +66,15 @@ public class PlayersController(AppDbContext dbContext, PlayerMetricsService play
                 sellFixtureScore = dbContext.SquadPlayerScores
                     .Where(r => r.LeagueId == leagueId && r.PlayerId == p.Id)
                     .Select(r => (double?)r.FixtureScore)
+                    .FirstOrDefault(),
+                // Umbauplan: Kaufpreis darf als Info angezeigt werden, darf aber nirgends in eine
+                // Entscheidung (Sortierung, Verkaufsplaner-Ziel) einfließen - reiner Anzeigewert.
+                // Letzter bekannter Kauf dieses Managers für diesen Spieler; null, wenn der Spieler
+                // vor Beginn des Transfer-Trackings da war oder zugelost wurde (kein Buy-Eintrag).
+                purchasePrice = dbContext.LeagueTransfers
+                    .Where(t => t.LeagueId == leagueId && t.ManagerId == effectiveManagerId && t.PlayerId == p.Id && t.Type == TransferType.Buy)
+                    .OrderByDescending(t => t.OccurredAt)
+                    .Select(t => (int?)t.Price)
                     .FirstOrDefault(),
             })
             .ToListAsync(ct);

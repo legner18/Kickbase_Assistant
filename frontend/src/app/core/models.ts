@@ -23,6 +23,8 @@ export interface SellPlanCandidate {
   marketValue: number;
   expectedPoints: number;
   locked: boolean;
+  purchasePrice: number | null;
+  profitLoss: number | null;
 }
 
 export interface SellPlanCombination {
@@ -87,6 +89,7 @@ export interface Player {
   sellMomentumScore: number | null;
   sellLineupScore: number | null;
   sellFixtureScore: number | null;
+  purchasePrice: number | null;
 }
 
 export interface PlayerSearchResult {

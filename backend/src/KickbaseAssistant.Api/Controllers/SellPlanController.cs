@@ -1,3 +1,4 @@
+using KickbaseAssistant.Domain.Leagues;
 using KickbaseAssistant.Domain.Players;
 using KickbaseAssistant.Infrastructure.Data;
 using KickbaseAssistant.Infrastructure.Players;
@@ -29,6 +30,14 @@ public class SellPlanController(AppDbContext dbContext, PlayerMetricsService pla
             .Select(l => l.PlayerId)
             .ToListAsync(ct)).ToHashSet();
 
+        // Nur Anzeige (siehe GetSquad-Kommentar) - nie Teil der Optimierer-Eingabe (SellCandidate),
+        // damit Kaufpreis/Gewinn-Verlust gar nicht erst in die Zielfunktion gelangen kann.
+        var purchasePrices = await dbContext.LeagueTransfers
+            .Where(t => t.LeagueId == leagueId && t.ManagerId == league.OwnUserId && t.Type == TransferType.Buy)
+            .GroupBy(t => t.PlayerId)
+            .Select(g => new { PlayerId = g.Key, Price = g.OrderByDescending(t => t.OccurredAt).First().Price })
+            .ToDictionaryAsync(x => x.PlayerId, x => x.Price, ct);
+
         var candidates = new List<SellCandidate>();
         foreach (var player in squadPlayers)
         {
@@ -52,6 +61,8 @@ public class SellPlanController(AppDbContext dbContext, PlayerMetricsService pla
                 marketValue = c.MarketValue,
                 expectedPoints = c.ExpectedPoints,
                 locked = c.Locked,
+                purchasePrice = purchasePrices.TryGetValue(c.PlayerId, out var price) ? (int?)price : null,
+                profitLoss = purchasePrices.TryGetValue(c.PlayerId, out var priceForDelta) ? (int?)(c.MarketValue - priceForDelta) : null,
             }),
             combinations = combinations.Select(combo => new
             {
