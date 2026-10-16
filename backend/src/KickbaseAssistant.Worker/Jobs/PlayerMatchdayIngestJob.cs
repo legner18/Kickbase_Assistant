@@ -12,8 +12,9 @@ namespace KickbaseAssistant.Worker.Jobs;
 /// S11-Quote und Pkt/Min (Phase 1 Kennzahlen), die sich aus den Saison-Aggregaten
 /// (Player.TotalPoints/AveragePoints) nicht berechnen lassen.
 ///
-/// Läuft für jeden Spieler, der in irgendeiner Liga im Kader steht (eigener Kader + Mitspieler-
-/// Käder über SquadMembership). Beim ersten Sichten eines Spielers werden alle von Kickbase
+/// Läuft für jeden Spieler, der in irgendeiner aktiven Liga im Kader steht (eigener Kader +
+/// Mitspieler-Käder über SquadMembership; archivierte Ligen behalten ihre alten Zeilen, zählen
+/// hier aber nicht mehr). Beim ersten Sichten eines Spielers werden alle von Kickbase
 /// gelieferten Saisons rückwirkend geladen (einmaliger Backfill, gleiche Idee wie der
 /// 92-Tage-Marktwert-Backfill in LeagueSquadSyncJob); danach wird nur noch die laufende Saison
 /// aktualisiert, da vergangene Saisons sich nicht mehr ändern.
@@ -26,7 +27,11 @@ public class PlayerMatchdayIngestJob(
     public async Task Execute(IJobExecutionContext context)
     {
         var ct = context.CancellationToken;
-        var playerIds = await dbContext.SquadMemberships.Select(m => m.PlayerId).Distinct().ToListAsync(ct);
+        var playerIds = await dbContext.SquadMemberships
+            .Where(m => dbContext.Leagues.Any(l => l.Id == m.LeagueId && l.IsActive))
+            .Select(m => m.PlayerId)
+            .Distinct()
+            .ToListAsync(ct);
 
         var playersIngested = 0;
         var matchdaysWritten = 0;

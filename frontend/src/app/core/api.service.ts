@@ -98,8 +98,10 @@ export class ApiService {
     return this.http.get<MarketValueHistoryPoint[]>(`${this.base}/api/players/${playerId}/market-value-history`);
   }
 
-  getSellAlerts(includeAcknowledged = false): Observable<SellAlert[]> {
-    return this.http.get<SellAlert[]>(`${this.base}/api/sell-alerts?includeAcknowledged=${includeAcknowledged}`);
+  getSellAlerts(leagueId: string, includeAcknowledged = false): Observable<SellAlert[]> {
+    return this.http.get<SellAlert[]>(`${this.base}/api/sell-alerts`, {
+      params: { leagueId, includeAcknowledged },
+    });
   }
 
   acknowledgeSellAlert(id: number): Observable<void> {

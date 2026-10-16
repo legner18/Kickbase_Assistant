@@ -211,7 +211,7 @@ public class PlayersController(AppDbContext dbContext, PlayerMetricsService play
             .ToListAsync(ct);
 
         var owners = await dbContext.SquadMemberships
-            .Where(m => m.PlayerId == id)
+            .Where(m => m.PlayerId == id && dbContext.Leagues.Any(l => l.Id == m.LeagueId && l.IsActive))
             .Select(m => new { m.LeagueId, m.ManagerId, m.ManagerName })
             .ToListAsync(ct);
 
@@ -253,7 +253,7 @@ public class PlayersController(AppDbContext dbContext, PlayerMetricsService play
         var predictedNextValue = MarketValuePredictor.PredictNextValue(player.MarketValue, predictedChangePercent);
 
         var marketListingHistory = await dbContext.MarketListingHistories
-            .Where(h => h.PlayerId == id)
+            .Where(h => h.PlayerId == id && dbContext.Leagues.Any(l => l.Id == h.LeagueId && l.IsActive))
             .OrderByDescending(h => h.ListedAt)
             .Take(10)
             .Select(h => new { h.LeagueId, h.ListedAt, h.RemovedAt, h.Price, outcome = h.Outcome.ToString() })
@@ -262,7 +262,7 @@ public class PlayersController(AppDbContext dbContext, PlayerMetricsService play
         // Umbauplan "Besitzer-Verlauf je Spieler": Kette Kickbase -> ManagerA (4 Tage) -> ... - pro
         // Liga eigenständig, da Kader-Ökonomien zwischen Ligen unabhängig sind.
         var transferHistory = await dbContext.LeagueTransfers
-            .Where(t => t.PlayerId == id)
+            .Where(t => t.PlayerId == id && dbContext.Leagues.Any(l => l.Id == t.LeagueId && l.IsActive))
             .OrderBy(t => t.OccurredAt)
             .Select(t => new { t.LeagueId, t.ManagerName, t.Type, t.Price, t.OccurredAt })
             .ToListAsync(ct);

@@ -1,4 +1,5 @@
 using KickbaseAssistant.Infrastructure.Data;
+using KickbaseAssistant.Infrastructure.Leagues;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -8,10 +9,16 @@ namespace KickbaseAssistant.Api.Controllers;
 [Route("api/sell-alerts")]
 public class SellAlertsController(AppDbContext dbContext) : ControllerBase
 {
+    /// <summary>
+    /// Nur Alarme für Spieler, die aktuell im eigenen Kader stehen - in der übergebenen Liga bzw.
+    /// ohne leagueId in allen aktiven Ligen. SellAlert selbst hat keine Liga, alte Alarme für
+    /// verkaufte Spieler oder archivierte Ligen bleiben in der DB, werden hier aber ausgeblendet.
+    /// </summary>
     [HttpGet]
-    public async Task<ActionResult> GetAll([FromQuery] bool includeAcknowledged, CancellationToken ct)
+    public async Task<ActionResult> GetAll([FromQuery] bool includeAcknowledged, [FromQuery] string? leagueId, CancellationToken ct)
     {
-        var query = dbContext.SellAlerts.Include(a => a.Player).AsQueryable();
+        var ownPlayerIds = dbContext.OwnSquadPlayerIds(leagueId);
+        var query = dbContext.SellAlerts.Include(a => a.Player).Where(a => ownPlayerIds.Contains(a.PlayerId));
         if (!includeAcknowledged)
         {
             query = query.Where(a => !a.Acknowledged);

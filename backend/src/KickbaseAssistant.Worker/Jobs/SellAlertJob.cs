@@ -4,6 +4,7 @@ using KickbaseAssistant.Domain.Players;
 using KickbaseAssistant.Infrastructure.Data;
 using KickbaseAssistant.Infrastructure.Kickbase;
 using KickbaseAssistant.Infrastructure.Kickbase.Dtos;
+using KickbaseAssistant.Infrastructure.Leagues;
 using KickbaseAssistant.Infrastructure.Notifications;
 using Microsoft.EntityFrameworkCore;
 using Quartz;
@@ -40,7 +41,8 @@ public class SellAlertJob(
     public async Task Execute(IJobExecutionContext context)
     {
         var ct = context.CancellationToken;
-        var squadPlayers = await dbContext.Players.Where(p => p.IsInSquad).ToListAsync(ct);
+        var ownPlayerIds = dbContext.OwnSquadPlayerIds();
+        var squadPlayers = await dbContext.Players.Where(p => ownPlayerIds.Contains(p.Id)).ToListAsync(ct);
         var newAlerts = new List<(Player Player, string Reason)>();
 
         foreach (var player in squadPlayers)

@@ -1,7 +1,10 @@
 using KickbaseAssistant.Domain.Leagues;
 using KickbaseAssistant.Infrastructure.Data;
 using KickbaseAssistant.Infrastructure.Kickbase;
+using KickbaseAssistant.Infrastructure.Kickbase.Dtos;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace KickbaseAssistant.Infrastructure.Leagues;
 
@@ -16,13 +19,31 @@ namespace KickbaseAssistant.Infrastructure.Leagues;
 /// MarketValueSnapshotJob (das vorher dieselbe Logik inline hatte), damit der abendliche
 /// Snapshot-Lauf nicht auf den nächsten Stunden-Tick warten muss, falls eine ganz neue Liga
 /// zwischenzeitlich dazukam.
+///
+/// Ist Kickbase:OnlyLeagueId gesetzt, zählt nur diese eine Liga als "vom Account geliefert" - alle
+/// anderen werden über denselben Archivierungs-Pfad stillgelegt (siehe KickbaseOptions).
 /// </summary>
-public class LeagueSyncService(KickbaseApiClient kickbaseApiClient, AppDbContext dbContext)
+public class LeagueSyncService(
+    KickbaseApiClient kickbaseApiClient,
+    AppDbContext dbContext,
+    IOptions<KickbaseOptions> options,
+    ILogger<LeagueSyncService> logger)
 {
     public async Task<LeagueSyncResult> SyncAsync(CancellationToken ct)
     {
         var me = await kickbaseApiClient.GetMeAsync(ct);
-        var remoteLeagues = await kickbaseApiClient.GetLeaguesAsync(ct);
+        IReadOnlyList<KickbaseLeagueDto> remoteLeagues = await kickbaseApiClient.GetLeaguesAsync(ct);
+
+        var onlyLeagueId = options.Value.OnlyLeagueId;
+        if (!string.IsNullOrWhiteSpace(onlyLeagueId))
+        {
+            remoteLeagues = remoteLeagues.Where(l => l.Id == onlyLeagueId).ToList();
+            if (remoteLeagues.Count == 0)
+            {
+                logger.LogWarning("Liga-Sync: Kickbase:OnlyLeagueId {LeagueId} gehört nicht (mehr) zum Account - keine aktive Liga.", onlyLeagueId);
+            }
+        }
+
         var remoteLeagueIds = remoteLeagues.Select(l => l.Id).ToHashSet();
 
         var created = 0;

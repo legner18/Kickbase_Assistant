@@ -2,6 +2,7 @@ using System.Text;
 using KickbaseAssistant.Domain.Players;
 using KickbaseAssistant.Infrastructure.Data;
 using KickbaseAssistant.Infrastructure.Kickbase;
+using KickbaseAssistant.Infrastructure.Leagues;
 using KickbaseAssistant.Infrastructure.LigaInsider;
 using KickbaseAssistant.Infrastructure.Notifications;
 using Microsoft.EntityFrameworkCore;
@@ -34,7 +35,8 @@ public class LigaInsiderScrapeJob(
         var ct = context.CancellationToken;
         var now = DateTimeOffset.UtcNow;
 
-        var squadPlayers = await dbContext.Players.Where(p => p.IsInSquad).ToListAsync(ct);
+        var ownPlayerIds = dbContext.OwnSquadPlayerIds();
+        var squadPlayers = await dbContext.Players.Where(p => ownPlayerIds.Contains(p.Id)).ToListAsync(ct);
         var playersByTeam = squadPlayers.GroupBy(p => p.TeamId).ToList();
 
         var competitionIds = squadPlayers.Select(p => p.CompetitionId.ToString()).Distinct().ToList();

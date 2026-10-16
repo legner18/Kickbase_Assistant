@@ -91,7 +91,7 @@ export class DashboardComponent implements OnDestroy {
       this.players.set(players);
       this.loading.set(false);
     });
-    this.api.getSellAlerts(false).subscribe((alerts) => this.openAlerts.set(alerts));
+    this.api.getSellAlerts(leagueId).subscribe((alerts) => this.openAlerts.set(alerts));
     this.api.getTransfers(leagueId).subscribe((transfers) => this.transfers.set(transfers.slice(0, 5)));
     this.api
       .getBalanceStatus(leagueId)
