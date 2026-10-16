@@ -22,7 +22,12 @@ namespace KickbaseAssistant.Worker.Jobs;
 /// history only covers for the trailing 92/365 days - so it's only computed for Buy transfers
 /// within the last 30 days, looked up once and cached on the LeagueTransfer row from then on.
 /// Older transfers are still logged (for the activity history) but without an overpay figure.
+///
+/// Runs every 30 minutes (see Program.cs) so new transfers - and with them purchase price and
+/// profit/loss on Kader/Verkaufsplaner - show up promptly. Existing transfers are only inserted
+/// once (keyed by player/type/time), so repeated runs just pick up what's new.
 /// </summary>
+[DisallowConcurrentExecution]
 public class LeagueAnalysisJob(
     KickbaseApiClient kickbaseApiClient,
     AppDbContext dbContext,

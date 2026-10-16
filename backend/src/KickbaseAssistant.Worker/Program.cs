@@ -81,9 +81,12 @@ builder.Services.AddQuartz(q =>
     q.AddTrigger(t => t
         .ForJob(leagueAnalysisJobKey)
         .WithIdentity($"{nameof(LeagueAnalysisJob)}-trigger")
-        // Einmal täglich - Budget/Gebotsverhalten sind langsam wandernde, strategische Infos,
-        // kein Zeitdruck wie bei Live-Punkten. Nach den anderen Abend-Jobs.
-        .WithCronSchedule("0 5 23 * * ?", x => x.InTimeZone(germanyTimeZone)));
+        // Alle 30 Minuten (xx:15/xx:45, versetzt zu LeagueSyncJob/TransferMarketScanJob um xx:00 und
+        // BalanceGuardJob um xx:30): schreibt LeagueTransfers, aus denen Transfer-Liste, Kaufpreis
+        // und Gewinn/Verlust kommen - die sollen nach einem Kauf nicht bis zum Abend veraltet sein.
+        // Pro Lauf nur Ranking/Budget + Transferverlauf je Manager, bei einer Liga mit wenigen
+        // Managern also eine Handvoll Aufrufe.
+        .WithCronSchedule("0 15/30 * * * ?", x => x.InTimeZone(germanyTimeZone)));
 
     var leagueSquadSyncJobKey = new JobKey(nameof(LeagueSquadSyncJob));
     q.AddJob<LeagueSquadSyncJob>(opts => opts.WithIdentity(leagueSquadSyncJobKey));
@@ -99,8 +102,8 @@ builder.Services.AddQuartz(q =>
     q.AddTrigger(t => t
         .ForJob(dailySummaryJobKey)
         .WithIdentity($"{nameof(DailySummaryJob)}-trigger")
-        // 10 Min nach der Liga-Analyse, damit alle Abend-Jobs (Snapshot/Alarm/Kader-Sync/Analyse)
-        // für heute schon fertig sind, bevor zusammengefasst wird.
+        // Nach den Abend-Jobs (Snapshot/Alarm/Kader-Sync), damit sie für heute schon fertig sind,
+        // bevor zusammengefasst wird.
         .WithCronSchedule("0 15 23 * * ?", x => x.InTimeZone(germanyTimeZone)));
 
     var playerMatchdayIngestJobKey = new JobKey(nameof(PlayerMatchdayIngestJob));
