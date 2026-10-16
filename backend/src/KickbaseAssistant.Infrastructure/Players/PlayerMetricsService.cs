@@ -54,6 +54,28 @@ public class PlayerMetricsService(AppDbContext dbContext)
         return recentPoints.Count > 0 ? recentPoints.Average() : fallbackAveragePoints;
     }
 
+    /// <summary>
+    /// Kontostand-Wächter: Summe der positiven letzten Marktwert-Änderungen der übergebenen
+    /// Spieler - der "erwartete Puffer" für BalanceGuardCalculator.GetStatus.
+    /// </summary>
+    public async Task<double> ComputePositiveMarketValueBufferAsync(IEnumerable<string> playerIds, CancellationToken ct)
+    {
+        var positiveBuffer = 0.0;
+        foreach (var playerId in playerIds)
+        {
+            var latest = await dbContext.MarketValueSnapshots
+                .Where(s => s.PlayerId == playerId)
+                .OrderByDescending(s => s.Date)
+                .FirstOrDefaultAsync(ct);
+            if (latest is not null && latest.MarketValueChange > 0)
+            {
+                positiveBuffer += latest.MarketValueChange;
+            }
+        }
+
+        return positiveBuffer;
+    }
+
     public async Task<PlayerMatchdayMetrics?> ComputeMatchdayMetricsAsync(string playerId, CancellationToken ct)
     {
         var currentSeasonId = await ResolveCurrentSeasonIdAsync(playerId, ct);

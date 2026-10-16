@@ -52,6 +52,7 @@ public static class DependencyInjection
 
         services.AddScoped<KickbaseApiClient>();
         services.AddScoped<LeagueSyncService>();
+        services.AddScoped<OwnSquadSyncService>();
 
         return services;
     }

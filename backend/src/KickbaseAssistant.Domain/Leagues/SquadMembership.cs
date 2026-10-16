@@ -3,11 +3,10 @@ using KickbaseAssistant.Domain.Players;
 namespace KickbaseAssistant.Domain.Leagues;
 
 /// <summary>
-/// Which manager's squad a player belongs to, in a given league - full-refresh per (league,
-/// manager), so it's fine to drop and recompletely rebuild rather than tracking history. The
-/// user's own rows are written by MarketValueSnapshotJob (which already fetches their squad
-/// daily for market-value tracking); every other manager's rows are written by
-/// LeagueSquadSyncJob. Together this is what lets the frontend show "whose squad is this player
+/// Which manager's squad a player belongs to, in a given league - no history, just the current
+/// state per (league, manager). The user's own rows are written by OwnSquadSyncService, called
+/// every 2 minutes during the day by OwnSquadSyncJob and in the evening by MarketValueSnapshotJob;
+/// every other manager's rows are written by LeagueSquadSyncJob. Together this is what lets the frontend show "whose squad is this player
 /// in" for any manager in the league, not just the user's own.
 /// </summary>
 public class SquadMembership

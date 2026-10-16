@@ -11,6 +11,9 @@ export class LiveHubService {
 
   readonly lastUpdate = signal<LiveRankingUpdate | null>(null);
   readonly lastMarketUpdate = signal<LiveMarketUpdate | null>(null);
+  // Nur ein Signal "Kader/Kontostand dieser Liga hat sich geändert" (OwnSquadSyncJob) - das Objekt
+  // ist pro Push neu, damit zwei Pushes für dieselbe Liga trotzdem jeweils einen Effekt auslösen.
+  readonly lastSquadUpdate = signal<{ leagueId: string } | null>(null);
   readonly connectionState = signal<LiveConnectionState>('disconnected');
 
   connect(): void {
@@ -29,6 +32,9 @@ export class LiveHubService {
     });
     connection.on('MarketUpdated', (_leagueId: string, payload: LiveMarketUpdate) => {
       this.lastMarketUpdate.set(payload);
+    });
+    connection.on('SquadUpdated', (leagueId: string) => {
+      this.lastSquadUpdate.set({ leagueId });
     });
     connection.onreconnected(() => this.connectionState.set('connected'));
     connection.onreconnecting(() => this.connectionState.set('connecting'));

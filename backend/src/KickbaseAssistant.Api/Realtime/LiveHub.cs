@@ -29,4 +29,13 @@ public class LiveHub(ILogger<LiveHub> logger) : Hub
     {
         await Clients.Others.SendAsync("MarketUpdated", leagueId, payload);
     }
+
+    /// <summary>
+    /// Eigener Kader oder Kontostand hat sich geändert (OwnSquadSyncJob) - reines Signal, das
+    /// Frontend lädt daraufhin selbst neu (z.B. der Verkaufsplaner).
+    /// </summary>
+    public async Task PublishSquadUpdate(string leagueId)
+    {
+        await Clients.Others.SendAsync("SquadUpdated", leagueId);
+    }
 }

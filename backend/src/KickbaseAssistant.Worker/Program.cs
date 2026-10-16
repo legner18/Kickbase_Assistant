@@ -131,6 +131,15 @@ builder.Services.AddQuartz(q =>
         .WithSimpleSchedule(s => s.WithIntervalInSeconds(60).RepeatForever())
         .StartNow());
 
+    var ownSquadSyncJobKey = new JobKey(nameof(OwnSquadSyncJob));
+    q.AddJob<OwnSquadSyncJob>(opts => opts.WithIdentity(ownSquadSyncJobKey));
+    q.AddTrigger(t => t
+        .ForJob(ownSquadSyncJobKey)
+        .WithIdentity($"{nameof(OwnSquadSyncJob)}-trigger")
+        // Alle 2 Minuten: Käufe/Verkäufe sollen im Verkaufsplaner zeitnah auftauchen, nicht erst
+        // mit dem 22-Uhr-Snapshot. Der Job selbst pausiert nachts und im Snapshot-Fenster.
+        .WithCronSchedule("0 0/2 * * * ?", x => x.InTimeZone(germanyTimeZone)));
+
     // Phase 9+: Punkteprognose + Optimierer wird hier mit eigenem Cron-Schedule registriert.
 });
 

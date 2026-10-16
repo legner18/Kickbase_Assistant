@@ -18,13 +18,15 @@ namespace KickbaseAssistant.Worker.Jobs;
 /// last run (22:45) is reached - whichever comes first. That also means later runs within the same
 /// window are cheap no-ops for players already snapshotted today.
 ///
-/// Also owns SquadMembership (full-refresh per league each run) - the only place that records
-/// *which* league a squad player actually belongs to, since Player.IsInSquad itself is a single
-/// global flag shared across all leagues a player happens to be owned in.
+/// Also refreshes the user's own SquadMembership rows (via OwnSquadSyncService, shared with the
+/// daytime OwnSquadSyncJob) - the only place that records *which* league a squad player actually
+/// belongs to, since Player.IsInSquad itself is a single global flag shared across all leagues a
+/// player happens to be owned in.
 /// </summary>
 public class MarketValueSnapshotJob(
     KickbaseApiClient kickbaseApiClient,
     LeagueSyncService leagueSyncService,
+    OwnSquadSyncService ownSquadSyncService,
     AppDbContext dbContext,
     ILogger<MarketValueSnapshotJob> logger) : IJob
 {
@@ -60,8 +62,6 @@ public class MarketValueSnapshotJob(
                 continue;
             }
 
-            var competitionId = int.TryParse(league.CompetitionId, out var parsed) ? parsed : 0;
-
             if (!teamNamesByCompetition.TryGetValue(league.CompetitionId, out var teamNames))
             {
                 try
@@ -78,48 +78,11 @@ public class MarketValueSnapshotJob(
                 teamNamesByCompetition[league.CompetitionId] = teamNames;
             }
 
-            var oldMemberships = await dbContext.SquadMemberships
-                .Where(m => m.LeagueId == league.Id && m.ManagerId == league.OwnUserId)
-                .ToListAsync(ct);
-            dbContext.SquadMemberships.RemoveRange(oldMemberships);
+            await ownSquadSyncService.ApplyAsync(league, me.Name, squad, teamNames, ct);
+            playersUpdated += squad.Count;
 
             foreach (var remotePlayer in squad)
             {
-                dbContext.SquadMemberships.Add(new SquadMembership
-                {
-                    LeagueId = league.Id,
-                    ManagerId = league.OwnUserId,
-                    ManagerName = me.Name,
-                    PlayerId = remotePlayer.Id,
-                });
-
-                var player = await dbContext.Players.FindAsync([remotePlayer.Id], ct);
-                if (player is null)
-                {
-                    player = new Player
-                    {
-                        Id = remotePlayer.Id,
-                        Name = remotePlayer.Name,
-                        TeamId = remotePlayer.TeamId,
-                        Position = remotePlayer.Position,
-                        CompetitionId = competitionId,
-                    };
-                    dbContext.Players.Add(player);
-                }
-
-                player.Name = remotePlayer.Name;
-                player.TeamId = remotePlayer.TeamId;
-                player.TeamName = teamNames.GetValueOrDefault(remotePlayer.TeamId, player.TeamName);
-                player.Position = remotePlayer.Position;
-                player.MarketValue = remotePlayer.MarketValue;
-                player.TotalPoints = remotePlayer.TotalPoints;
-                player.AveragePoints = remotePlayer.AveragePoints;
-                player.StatusCode = remotePlayer.Status;
-                player.CompetitionId = competitionId;
-                player.IsInSquad = true;
-                player.LastSeenAt = DateTimeOffset.UtcNow;
-                playersUpdated++;
-
                 if (!snapshottedPlayerIds.Add(remotePlayer.Id))
                 {
                     continue;

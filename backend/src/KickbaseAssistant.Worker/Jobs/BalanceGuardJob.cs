@@ -87,18 +87,7 @@ public class BalanceGuardJob(
             .Select(m => m.Player!)
             .ToListAsync(ct);
 
-        var positiveBuffer = 0.0;
-        foreach (var player in squadPlayers)
-        {
-            var latest = await dbContext.MarketValueSnapshots
-                .Where(s => s.PlayerId == player.Id)
-                .OrderByDescending(s => s.Date)
-                .FirstOrDefaultAsync(ct);
-            if (latest is not null && latest.MarketValueChange > 0)
-            {
-                positiveBuffer += latest.MarketValueChange;
-            }
-        }
+        var positiveBuffer = await playerMetricsService.ComputePositiveMarketValueBufferAsync(squadPlayers.Select(p => p.Id), ct);
 
         var creditLimit = BalanceGuardCalculator.CreditLimit(me.TeamValue, budget.Budget);
         var status = BalanceGuardCalculator.GetStatus(budget.Budget, positiveBuffer);
