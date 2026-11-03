@@ -57,7 +57,7 @@
     <table>
       <thead>
         <tr>
-          <th>Manager</th>
+          <th class="sticky-col">Manager</th>
           <th>Spieler</th>
           <th>Marktwert</th>
           <th>Fair Value</th>
@@ -67,7 +67,7 @@
       <tbody>
         @for (entry of fairValueComparison(); track entry.managerId) {
           <tr>
-            <td>{{ entry.managerName }}</td>
+            <td class="sticky-col">{{ entry.managerName }}</td>
             <td>{{ entry.playerCount }}</td>
             <td>{{ entry.squadMarketValue | number: '1.0-0' : 'de' }} €</td>
             <td>{{ entry.squadFairValue | number: '1.0-0' : 'de' }} €</td>

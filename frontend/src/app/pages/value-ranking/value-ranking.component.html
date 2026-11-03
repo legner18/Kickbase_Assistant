@@ -29,8 +29,8 @@
     <table>
       <thead>
         <tr>
-          <th>#</th>
-          <th>Spieler</th>
+          <th class="hide-mobile">#</th>
+          <th class="sticky-col">Spieler</th>
           <th>Pos</th>
           <th>Team</th>
           <th>Marktwert</th>
@@ -44,8 +44,8 @@
       <tbody>
         @for (entry of filtered(); track entry.id; let i = $index) {
           <tr class="clickable-row" (click)="openPlayer(entry.id)">
-            <td>{{ i + 1 }}</td>
-            <td>{{ entry.name }}</td>
+            <td class="hide-mobile">{{ i + 1 }}</td>
+            <td class="sticky-col">{{ entry.name }}</td>
             <td>{{ positionLabels[entry.position] ?? '–' }}</td>
             <td>{{ entry.teamName ?? '–' }}</td>
             <td>{{ entry.marketValue | number: '1.0-0' : 'de' }} €</td>

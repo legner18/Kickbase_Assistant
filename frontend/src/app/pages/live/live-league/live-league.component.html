@@ -16,7 +16,7 @@
             <th>#</th>
             <th>Manager</th>
             <th>Punkte</th>
-            <th title="Aufgestellte Spieler, deren Spiel läuft oder vorbei ist">Angepfiffen</th>
+            <th class="hide-mobile" title="Aufgestellte Spieler, deren Spiel läuft oder vorbei ist">Angepfiffen</th>
             <th>Saison</th>
           </tr>
         </thead>
@@ -36,6 +36,12 @@
                     <span class="badge badge-good">Ich</span>
                   }
                 </span>
+                <div class="mobile-meta">
+                  <span>{{ standing.startedCount }}/{{ standing.lineupCount }} angepfiffen</span>
+                  @if (standing.liveCount > 0) {
+                    <span class="badge badge-critical">{{ standing.liveCount }} live</span>
+                  }
+                </div>
               </td>
               <td>
                 <span class="manager-points" [class.negative]="standing.points < 0">{{ standing.points | number: '1.0-0' : 'de' }}</span>
@@ -43,7 +49,7 @@
                   <span class="badge badge-warning" title="Kickbase wertet die Punkte dieses Spieltags für diesen Manager nicht">nicht gewertet</span>
                 }
               </td>
-              <td>
+              <td class="hide-mobile">
                 {{ standing.startedCount }}/{{ standing.lineupCount }}
                 @if (standing.liveCount > 0) {
                   <span class="badge badge-critical">{{ standing.liveCount }} live</span>
@@ -90,10 +96,10 @@
           <thead>
             <tr>
               <th>Spieler</th>
-              <th>Pos</th>
+              <th class="hide-mobile">Pos</th>
               <th>Spiel</th>
               <th>Punkte</th>
-              <th>Ereignisse</th>
+              <th class="hide-mobile">Ereignisse</th>
             </tr>
           </thead>
           <tbody>
@@ -149,8 +155,16 @@
           </a>
         }
       </span>
+      <div class="mobile-meta">
+        @if (player.position !== null) {
+          <span>{{ positionLabels[player.position] }}</span>
+        }
+        @for (event of player.events; track event.label) {
+          <span class="badge" [class]="event.badgeClass">{{ event.label }}</span>
+        }
+      </div>
     </td>
-    <td>{{ player.position !== null ? positionLabels[player.position] : '–' }}</td>
+    <td class="hide-mobile">{{ player.position !== null ? positionLabels[player.position] : '–' }}</td>
     <td>
       @if (player.match; as match) {
         <span class="player-match">
@@ -174,7 +188,7 @@
     <td class="player-points" [class.negative]="(player.points ?? 0) < 0">
       {{ player.points !== null ? (player.points | number: '1.0-0' : 'de') : '–' }}
     </td>
-    <td>
+    <td class="hide-mobile">
       <div class="event-chips">
         @for (event of player.events; track event.label) {
           <span class="badge" [class]="event.badgeClass">{{ event.label }}</span>

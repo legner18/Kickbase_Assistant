@@ -71,3 +71,11 @@
 .player-points {
   font-weight: 650;
 }
+
+@media (max-width: 640px) {
+  .player-match {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.1rem;
+  }
+}

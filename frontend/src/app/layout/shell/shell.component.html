@@ -1,5 +1,22 @@
 <div class="shell">
-  <aside class="sidebar">
+  <header class="mobile-bar">
+    <button type="button" class="icon-btn menu-button" aria-label="Menü" [attr.aria-expanded]="menuOpen()" (click)="onMenuClick()">
+      <svg viewBox="0 0 24 24"><path d="M4 6h16" /><path d="M4 12h16" /><path d="M4 18h16" /></svg>
+    </button>
+    <div class="brand mobile-brand">
+      <svg viewBox="0 0 24 24" class="brand-icon"><path d="M12 2 2 7l10 5 10-5-10-5Z" /><path d="m2 17 10 5 10-5" /><path d="m2 12 10 5 10-5" /></svg>
+      <span>Kickbase Assistant</span>
+    </div>
+    @if (leagueContext.selectedLeague(); as league) {
+      <span class="mobile-league">{{ league.name }}</span>
+    }
+  </header>
+
+  @if (menuOpen()) {
+    <div class="drawer-backdrop" (click)="onBackdropClick()"></div>
+  }
+
+  <aside class="sidebar" [class.sidebar-open]="menuOpen()">
     <div class="brand">
       <svg viewBox="0 0 24 24" class="brand-icon"><path d="M12 2 2 7l10 5 10-5-10-5Z" /><path d="m2 17 10 5 10-5" /><path d="m2 12 10 5 10-5" /></svg>
       <span>Kickbase Assistant</span>

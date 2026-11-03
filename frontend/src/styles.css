@@ -243,7 +243,7 @@ tbody tr:last-child td {
 
 .card-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(180px, 100%), 1fr));
   gap: 1rem;
   margin-bottom: 1.25rem;
 }
@@ -585,6 +585,10 @@ select {
   letter-spacing: 0.04em;
 }
 
+.mobile-meta {
+  display: none;
+}
+
 @media (max-width: 900px) {
   .live-layout,
   .live-layout-wide {
@@ -593,6 +597,131 @@ select {
 
   .live-panel {
     position: static;
+  }
+
+  .page-header {
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+
+  .page-header > div:first-child {
+    flex: 1 1 0;
+    min-width: min(12rem, 100%);
+  }
+
+  .toolbar {
+    flex-shrink: 1;
+    flex-wrap: wrap;
+    max-width: 100%;
+  }
+
+  .toolbar select,
+  .toolbar input[type='search'],
+  .toolbar input[type='text'] {
+    flex: 1 1 140px;
+    min-width: 0;
+  }
+
+  .card-table .sticky-col {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    background: var(--surface-card);
+    box-shadow: inset -1px 0 0 var(--gridline);
+  }
+
+  .card-table tbody tr:hover .sticky-col {
+    background: var(--surface-hover);
+  }
+
+  .card-table .own-row .sticky-col {
+    background: color-mix(in srgb, var(--status-good) 8%, var(--surface-card));
+  }
+}
+
+@media (max-width: 640px) {
+  h1 {
+    font-size: 1.3rem;
+  }
+
+  h2 {
+    font-size: 0.95rem;
+  }
+
+  .card {
+    padding: 0.9rem 1rem;
+    margin-bottom: 1rem;
+    border-radius: var(--radius);
+  }
+
+  .card-table {
+    padding: 0;
+  }
+
+  th,
+  td {
+    padding: 0.5rem 0.6rem;
+  }
+
+  .card-table th:first-child,
+  .card-table td:first-child {
+    padding-left: 1rem;
+  }
+
+  .card-table th:last-child,
+  .card-table td:last-child {
+    padding-right: 1rem;
+  }
+
+  .card-grid {
+    grid-template-columns: repeat(auto-fit, minmax(min(140px, 100%), 1fr));
+    gap: 0.6rem;
+    margin-bottom: 1rem;
+  }
+
+  .card-grid > .card {
+    margin-bottom: 0;
+  }
+
+  .stat {
+    font-size: 1.15rem;
+    overflow-wrap: anywhere;
+  }
+
+  .stat-icon {
+    display: none;
+  }
+
+  .page-header {
+    margin-bottom: 1rem;
+  }
+
+  .card-header {
+    flex-wrap: wrap;
+    gap: 0.4rem 1rem;
+  }
+
+  .live-panel-header {
+    padding: 0.9rem 1rem 0.7rem;
+  }
+
+  .live-panel-total {
+    font-size: 1.35rem;
+  }
+
+  .hide-mobile {
+    display: none;
+  }
+
+  .mobile-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.3rem;
+    margin-top: 0.3rem;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    white-space: normal;
   }
 }
 

@@ -85,10 +85,10 @@
             <thead>
               <tr>
                 <th>Spieler</th>
-                <th>Pos</th>
+                <th class="hide-mobile">Pos</th>
                 <th>Punkte</th>
-                <th>Ereignisse</th>
-                <th>Besitzer</th>
+                <th class="hide-mobile">Ereignisse</th>
+                <th class="hide-mobile">Besitzer</th>
               </tr>
             </thead>
             <tbody>
@@ -115,17 +115,30 @@
                         </a>
                       }
                     </span>
+                    <div class="mobile-meta">
+                      @if (player.position !== null) {
+                        <span>{{ positionLabels[player.position] }}</span>
+                      }
+                      @if (player.isMine) {
+                        <span class="badge badge-good">Ich</span>
+                      } @else if (player.ownerManagerName) {
+                        <span>· {{ player.ownerManagerName }}</span>
+                      }
+                      @for (event of player.events; track event.label) {
+                        <span class="badge" [class]="event.badgeClass">{{ event.label }}</span>
+                      }
+                    </div>
                   </td>
-                  <td>{{ player.position !== null ? positionLabels[player.position] : '–' }}</td>
+                  <td class="hide-mobile">{{ player.position !== null ? positionLabels[player.position] : '–' }}</td>
                   <td class="player-points" [class.negative]="player.points < 0">{{ player.points | number: '1.0-0' : 'de' }}</td>
-                  <td>
+                  <td class="hide-mobile">
                     <div class="event-chips">
                       @for (event of player.events; track event.label) {
                         <span class="badge" [class]="event.badgeClass">{{ event.label }}</span>
                       }
                     </div>
                   </td>
-                  <td>
+                  <td class="hide-mobile">
                     @if (player.isMine) {
                       <span class="badge badge-good">Ich</span>
                     } @else if (player.ownerManagerName) {

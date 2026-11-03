@@ -37,7 +37,7 @@
     <table>
       <thead>
         <tr>
-          <th class="sortable" (click)="setSort('name')">Spieler</th>
+          <th class="sortable sticky-col" (click)="setSort('name')">Spieler</th>
           <th class="sortable" (click)="setSort('position')">Pos</th>
           <th>Team</th>
           <th class="sortable" (click)="setSort('marketValue')">Marktwert</th>
@@ -54,7 +54,7 @@
       <tbody>
         @for (player of filteredSorted(); track player.id) {
           <tr class="clickable-row" (click)="openPlayer(player.id)">
-            <td>{{ player.name }}</td>
+            <td class="sticky-col">{{ player.name }}</td>
             <td>{{ positionLabels[player.position] ?? '–' }}</td>
             <td>{{ player.teamName ?? player.teamId }}</td>
             <td>{{ player.marketValue | number: '1.0-0' : 'de' }} €</td>

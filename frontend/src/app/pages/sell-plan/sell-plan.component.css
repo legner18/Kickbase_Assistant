@@ -38,3 +38,22 @@
   font-size: 0.85rem;
   color: var(--text-secondary);
 }
+
+@media (max-width: 640px) {
+  .sell-combo {
+    padding: 0.8rem 1rem;
+  }
+
+  .sell-combo-header {
+    flex-wrap: wrap;
+  }
+
+  .sell-combo-meta {
+    flex-wrap: wrap;
+    gap: 0.25rem 1rem;
+  }
+
+  .sell-combo-meta span {
+    white-space: nowrap;
+  }
+}

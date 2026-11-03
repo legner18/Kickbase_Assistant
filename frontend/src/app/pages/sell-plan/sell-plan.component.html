@@ -65,7 +65,7 @@
     <table>
       <thead>
         <tr>
-          <th>Spieler</th>
+          <th class="sticky-col">Spieler</th>
           <th>Pos</th>
           <th>Marktwert</th>
           <th>Kaufpreis</th>
@@ -77,7 +77,7 @@
       <tbody>
         @for (candidate of p.candidates; track candidate.playerId) {
           <tr>
-            <td class="player-name-cell" (click)="openPlayer(candidate.playerId)">{{ candidate.playerName }}</td>
+            <td class="player-name-cell sticky-col" (click)="openPlayer(candidate.playerId)">{{ candidate.playerName }}</td>
             <td>{{ positionLabels[candidate.position] ?? '–' }}</td>
             <td>{{ candidate.marketValue | number: '1.0-0' : 'de' }} €</td>
             <td>
