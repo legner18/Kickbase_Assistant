@@ -53,6 +53,8 @@ public static class DependencyInjection
         services.AddScoped<KickbaseApiClient>();
         services.AddScoped<LeagueSyncService>();
         services.AddScoped<OwnSquadSyncService>();
+        services.AddScoped<LiveLeagueSyncService>();
+        services.AddScoped<LiveTimelineSyncService>();
 
         return services;
     }
@@ -89,6 +91,7 @@ public static class DependencyInjection
         services.Configure<LiveHubOptions>(configuration.GetSection(LiveHubOptions.SectionName));
         services.AddSingleton<LiveHubClient>();
         services.AddSingleton<LiveMarketStateCache>();
+        services.AddSingleton<LiveMatchStateCache>();
 
         return services;
     }

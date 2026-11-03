@@ -1,7 +1,7 @@
 import { Injectable, signal } from '@angular/core';
 import * as signalR from '@microsoft/signalr';
 import { API_BASE_URL } from './api-config';
-import { LiveMarketUpdate, LiveRankingUpdate } from './models';
+import { LiveMarketUpdate } from './models';
 
 export type LiveConnectionState = 'disconnected' | 'connecting' | 'connected';
 
@@ -9,11 +9,11 @@ export type LiveConnectionState = 'disconnected' | 'connecting' | 'connected';
 export class LiveHubService {
   private connection: signalR.HubConnection | null = null;
 
-  readonly lastUpdate = signal<LiveRankingUpdate | null>(null);
   readonly lastMarketUpdate = signal<LiveMarketUpdate | null>(null);
   // Nur ein Signal "Kader/Kontostand dieser Liga hat sich geändert" (OwnSquadSyncJob) - das Objekt
   // ist pro Push neu, damit zwei Pushes für dieselbe Liga trotzdem jeweils einen Effekt auslösen.
   readonly lastSquadUpdate = signal<{ leagueId: string } | null>(null);
+  readonly lastLiveMatchesUpdate = signal<{ competitionId: string } | null>(null);
   readonly connectionState = signal<LiveConnectionState>('disconnected');
 
   connect(): void {
@@ -27,14 +27,14 @@ export class LiveHubService {
       .withAutomaticReconnect()
       .build();
 
-    connection.on('RankingUpdated', (_leagueId: string, payload: LiveRankingUpdate) => {
-      this.lastUpdate.set(payload);
-    });
     connection.on('MarketUpdated', (_leagueId: string, payload: LiveMarketUpdate) => {
       this.lastMarketUpdate.set(payload);
     });
     connection.on('SquadUpdated', (leagueId: string) => {
       this.lastSquadUpdate.set({ leagueId });
+    });
+    connection.on('LiveMatchesUpdated', (competitionId: string) => {
+      this.lastLiveMatchesUpdate.set({ competitionId });
     });
     connection.onreconnected(() => this.connectionState.set('connected'));
     connection.onreconnecting(() => this.connectionState.set('connecting'));

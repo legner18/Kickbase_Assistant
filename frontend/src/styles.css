@@ -468,6 +468,134 @@ select {
   border-radius: 999px;
 }
 
+.muted {
+  color: var(--text-muted);
+}
+
+.own-row {
+  background: color-mix(in srgb, var(--status-good) 8%, transparent);
+}
+
+.event-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.player-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.expand-icon {
+  width: 13px;
+  height: 13px;
+  color: var(--text-muted);
+  transition: transform 0.12s ease;
+}
+
+.expand-icon-open {
+  transform: rotate(90deg);
+}
+
+.expanded-row {
+  background: var(--surface-hover);
+}
+
+.timeline-row,
+.timeline-row:hover {
+  background: var(--surface-sunken);
+}
+
+.timeline-row td {
+  white-space: normal;
+}
+
+.detail-link {
+  display: inline-flex;
+  padding: 0.1rem;
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+}
+
+.detail-link:hover {
+  color: var(--primary);
+  background: var(--surface-sunken);
+  text-decoration: none;
+}
+
+.detail-link svg {
+  width: 13px;
+  height: 13px;
+}
+
+.live-layout {
+  display: grid;
+  grid-template-columns: minmax(280px, 380px) minmax(0, 1fr);
+  gap: 1.25rem;
+  align-items: start;
+  margin-bottom: 1.75rem;
+}
+
+.live-layout-wide {
+  grid-template-columns: minmax(340px, 480px) minmax(0, 1fr);
+}
+
+.live-panel {
+  position: sticky;
+  top: 1rem;
+  margin-bottom: 0;
+}
+
+.live-panel-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.1rem 1.3rem 0.8rem;
+}
+
+.live-panel-header h3 {
+  font-size: 1.15rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.live-panel-sub {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+
+.live-panel-total {
+  font-size: 1.65rem;
+  font-weight: 700;
+  line-height: 1.1;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.live-panel-total span {
+  display: block;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+@media (max-width: 900px) {
+  .live-layout,
+  .live-layout-wide {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .live-panel {
+    position: static;
+  }
+}
+
 ::-webkit-scrollbar {
   height: 8px;
   width: 8px;

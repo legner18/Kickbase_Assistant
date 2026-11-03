@@ -299,22 +299,6 @@ export interface LeagueTransfer {
   occurredAt: string;
 }
 
-export interface RankingStanding {
-  userId: string;
-  name: string;
-  seasonPoints: number;
-  matchdayPoints: number;
-  seasonRank: number;
-  matchdayRank: number;
-}
-
-export interface LiveRankingUpdate {
-  leagueId: string;
-  leagueName: string;
-  matchday: number;
-  standings: RankingStanding[];
-}
-
 export interface MarketListingChange {
   type: 'New' | 'Removed' | 'PriceChanged' | 'OfferCountChanged';
   playerId: string;
@@ -347,11 +331,139 @@ export interface LiveMarketTransfersUpdate {
 
 export type LiveMarketUpdate = LiveMarketListingsUpdate | LiveMarketTransfersUpdate;
 
+export type LiveMatchStatus = 'NotStarted' | 'Live' | 'Finished';
+
+export interface LiveMatchTeam {
+  teamId: string;
+  name: string | null;
+  symbol: string | null;
+  goals: number | null;
+  points: number | null;
+  ownPlayerCount: number;
+  ownPoints: number;
+}
+
+export interface LiveMatch {
+  matchId: string;
+  matchdayNumber: number;
+  kickoffAt: string;
+  status: LiveMatchStatus;
+  minute: string | null;
+  pointsUpdatedAt: string | null;
+  home: LiveMatchTeam;
+  away: LiveMatchTeam;
+}
+
+export interface LiveMatchday {
+  matchday: number | null;
+  nextKickoffAt: string | null;
+  matches: LiveMatch[];
+}
+
+export interface LiveTeamPlayer {
+  playerId: string;
+  playerName: string;
+  position: number | null;
+  points: number;
+  eventKeys: number[];
+  ownerManagerName: string | null;
+  isMine: boolean;
+  hasDetail: boolean;
+  hasTimeline: boolean;
+}
+
+export interface LiveTeamPoints {
+  matchId: string;
+  teamId: string;
+  teamName: string | null;
+  points: number | null;
+  pointsUpdatedAt: string | null;
+  players: LiveTeamPlayer[];
+}
+
+export interface LiveManagerStanding {
+  managerId: string;
+  managerName: string;
+  isMe: boolean;
+  points: number;
+  pointsCounted: boolean;
+  matchdayRank: number;
+  seasonPoints: number;
+  seasonRank: number;
+  lineupCount: number;
+  startedCount: number;
+  liveCount: number;
+}
+
+export interface LiveManagerStandings {
+  matchday: number | null;
+  updatedAt: string | null;
+  managers: LiveManagerStanding[];
+}
+
+export interface LiveManagerPlayerMatch {
+  matchId: string;
+  status: LiveMatchStatus;
+  minute: string | null;
+  kickoffAt: string;
+  opponent: string | null;
+  isHome: boolean;
+}
+
+export interface LiveManagerPlayer {
+  playerId: string;
+  playerName: string;
+  position: number | null;
+  teamName: string | null;
+  inLineup: boolean;
+  points: number | null;
+  eventKeys: number[];
+  hasTimeline: boolean;
+  hasDetail: boolean;
+  match: LiveManagerPlayerMatch | null;
+}
+
+export interface LiveManagerDetail {
+  managerId: string;
+  managerName: string;
+  isMe: boolean;
+  matchday: number;
+  points: number;
+  pointsCounted: boolean;
+  updatedAt: string;
+  players: LiveManagerPlayer[];
+}
+
+export interface LivePlayerEvent {
+  eventId: string;
+  minute: number;
+  title: string | null;
+  points: number;
+}
+
+export interface LivePlayerTimeline {
+  matchId: string;
+  playerId: string;
+  playerName: string;
+  points: number;
+  fetchedAt: string | null;
+  events: LivePlayerEvent[];
+}
+
 export const POSITION_LABELS: Record<number, string> = {
   1: 'TW',
   2: 'ABW',
   3: 'MF',
   4: 'ST',
+};
+
+export const MATCH_EVENT_LABELS: Record<number, string> = {
+  1: 'Tor',
+  2: 'Eigentor',
+  3: 'Vorlage',
+  4: 'Gelb',
+  8: 'Eingewechselt',
+  9: 'Ausgewechselt',
 };
 
 export const LINEUP_STATUS_LABELS: Record<string, string> = {

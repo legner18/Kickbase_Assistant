@@ -1,0 +1,96 @@
+.timeline {
+  padding: 0.5rem 0.25rem 0.6rem 0.4rem;
+  white-space: normal;
+}
+
+.timeline-header {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  font-size: 0.85rem;
+  margin-bottom: 0.6rem;
+}
+
+.timeline-toggle {
+  margin-left: auto;
+  padding: 0.2rem 0.6rem;
+  font-size: 0.78rem;
+}
+
+.timeline-list {
+  list-style: none;
+  margin: 0 0 0 0.35rem;
+  padding: 0 0 0 0.9rem;
+  border-left: 2px solid var(--gridline);
+  max-height: 420px;
+  overflow-y: auto;
+}
+
+.timeline-item {
+  position: relative;
+  display: grid;
+  grid-template-columns: 2.6rem minmax(0, 1fr) auto;
+  gap: 0.6rem;
+  align-items: baseline;
+  padding: 0.22rem 0.4rem 0.22rem 0;
+  font-size: 0.85rem;
+}
+
+.timeline-item::before {
+  content: '';
+  position: absolute;
+  left: calc(-0.9rem - 5px);
+  top: 0.6rem;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--text-muted);
+}
+
+.timeline-item-positive::before {
+  background: var(--delta-up);
+}
+
+.timeline-item-negative::before {
+  background: var(--delta-down);
+}
+
+.timeline-item-marker {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.timeline-item-marker::before {
+  background: var(--surface-card);
+  border: 2px solid var(--gridline);
+  width: 6px;
+  height: 6px;
+}
+
+.timeline-minute {
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.timeline-points {
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.timeline-item-positive .timeline-points {
+  color: var(--delta-up);
+}
+
+.timeline-item-negative .timeline-points {
+  color: var(--delta-down);
+}
+
+.timeline-note {
+  margin: 0.5rem 0 0;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}

@@ -1,0 +1,45 @@
+<div class="timeline">
+  @if (loading()) {
+    <div class="skeleton" style="height: 120px"></div>
+  } @else {
+    @if (timeline(); as data) {
+      <div class="timeline-header">
+        <span><strong>{{ formatPoints(eventSum()) }}</strong> aus {{ scoringEventCount() }} Ereignissen</span>
+        @if (data.fetchedAt) {
+          <span class="muted">Stand {{ data.fetchedAt | date: 'HH:mm:ss' }} Uhr</span>
+        }
+        @if (events().length > 0) {
+          <button type="button" class="timeline-toggle" (click)="onShowAllClick()">
+            {{ showAll() ? 'Nur große Ereignisse' : 'Alle anzeigen' }}
+          </button>
+        }
+      </div>
+
+      @if (events().length === 0) {
+        <p class="timeline-note">Noch keine Ereignisse.</p>
+      } @else {
+        <ol class="timeline-list">
+          @for (matchEvent of visibleEvents(); track matchEvent.eventId) {
+            <li
+              class="timeline-item"
+              [class.timeline-item-positive]="matchEvent.points > 0"
+              [class.timeline-item-negative]="matchEvent.points < 0"
+              [class.timeline-item-marker]="matchEvent.points === 0"
+            >
+              <span class="timeline-minute">{{ matchEvent.minute }}′</span>
+              <span class="timeline-title">{{ matchEvent.title ?? 'Ereignis' }}</span>
+              <span class="timeline-points">{{ matchEvent.points !== 0 ? formatPoints(matchEvent.points) : '' }}</span>
+            </li>
+          }
+        </ol>
+        @if (hiddenEvents(); as hidden) {
+          <p class="timeline-note">
+            {{ hidden.count }} kleinere Aktionen ausgeblendet (zusammen {{ formatPoints(hidden.points) }})
+          </p>
+        }
+      }
+    } @else {
+      <p class="timeline-note">Keine Timeline verfügbar.</p>
+    }
+  }
+</div>

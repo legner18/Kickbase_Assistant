@@ -1,0 +1,192 @@
+@if (standingsLoading()) {
+  <div class="card"><div class="skeleton" style="height: 260px"></div></div>
+} @else if (managers().length > 0) {
+  <div class="league-header">
+    <h2>Spieltag {{ standings()?.matchday }}</h2>
+    @if (standings()?.updatedAt) {
+      <span class="league-updated">Stand {{ standings()?.updatedAt | date: 'HH:mm:ss' }} Uhr</span>
+    }
+  </div>
+
+  <div class="live-layout live-layout-wide">
+    <div class="card card-table">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Manager</th>
+            <th>Punkte</th>
+            <th title="Aufgestellte Spieler, deren Spiel läuft oder vorbei ist">Angepfiffen</th>
+            <th>Saison</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (standing of managers(); track standing.managerId) {
+            <tr
+              class="clickable-row"
+              [class.own-row]="standing.isMe"
+              [class.selected-row]="selectedManagerId() === standing.managerId"
+              (click)="onManagerClick(standing)"
+            >
+              <td>{{ standing.matchdayRank || '–' }}</td>
+              <td>
+                <span class="manager-name">
+                  {{ standing.managerName }}
+                  @if (standing.isMe) {
+                    <span class="badge badge-good">Ich</span>
+                  }
+                </span>
+              </td>
+              <td>
+                <span class="manager-points" [class.negative]="standing.points < 0">{{ standing.points | number: '1.0-0' : 'de' }}</span>
+                @if (!standing.pointsCounted) {
+                  <span class="badge badge-warning" title="Kickbase wertet die Punkte dieses Spieltags für diesen Manager nicht">nicht gewertet</span>
+                }
+              </td>
+              <td>
+                {{ standing.startedCount }}/{{ standing.lineupCount }}
+                @if (standing.liveCount > 0) {
+                  <span class="badge badge-critical">{{ standing.liveCount }} live</span>
+                }
+              </td>
+              <td>
+                {{ standing.seasonPoints | number: '1.0-0' : 'de' }}
+                @if (standing.seasonRank > 0) {
+                  <span class="muted">({{ standing.seasonRank }}.)</span>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card card-table live-panel" #managerPanel>
+      @if (manager(); as detail) {
+        <div class="live-panel-header">
+          <div>
+            <h3>
+              {{ detail.managerName }}
+              @if (detail.isMe) {
+                <span class="badge badge-good">Ich</span>
+              }
+            </h3>
+            <div class="live-panel-sub">Spieltag {{ detail.matchday }} · Stand {{ detail.updatedAt | date: 'HH:mm:ss' }} Uhr</div>
+          </div>
+          <div class="live-panel-total" [class.negative]="detail.points < 0">
+            {{ detail.points | number: '1.0-0' : 'de' }}
+            <span>Punkte</span>
+          </div>
+        </div>
+
+        @if (!detail.pointsCounted) {
+          <p class="points-warning">
+            Kickbase wertet die Punkte dieses Spieltags für {{ detail.managerName }} nicht - die Spielerpunkte unten zählen
+            nicht in die Tabelle.
+          </p>
+        }
+
+        <table>
+          <thead>
+            <tr>
+              <th>Spieler</th>
+              <th>Pos</th>
+              <th>Spiel</th>
+              <th>Punkte</th>
+              <th>Ereignisse</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (player of lineupPlayers(); track player.playerId) {
+              <ng-container *ngTemplateOutlet="playerRows; context: { $implicit: player }" />
+            }
+            @if (benchPlayers().length > 0) {
+              <tr class="bench-header">
+                <td colspan="5">Nicht aufgestellt - zählt nicht</td>
+              </tr>
+              @for (player of benchPlayers(); track player.playerId) {
+                <ng-container *ngTemplateOutlet="playerRows; context: { $implicit: player }" />
+              }
+            }
+          </tbody>
+        </table>
+      } @else if (managerLoading()) {
+        <div class="skeleton" style="height: 320px; margin: 1.1rem 1.3rem"></div>
+      } @else {
+        <p class="empty-state">Klick auf einen Manager, um die Punkte seiner Spieler zu sehen.</p>
+      }
+    </div>
+  </div>
+} @else {
+  <div class="card">
+    <p class="empty-state">
+      Noch keine Live-Daten der Liga. Sobald ein Spieltag läuft (oder der Worker den letzten Spieltag nachgeladen hat),
+      erscheinen hier alle Manager mit ihren Punkten.
+    </p>
+  </div>
+}
+
+<ng-template #playerRows let-player>
+  <tr
+    [class.clickable-row]="player.hasTimeline"
+    [class.bench-row]="!player.inLineup"
+    [class.expanded-row]="isExpanded(player)"
+    (click)="onPlayerClick(player)"
+  >
+    <td>
+      <span class="player-name">
+        @if (player.hasTimeline) {
+          <svg class="expand-icon" [class.expand-icon-open]="isExpanded(player)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 6l6 6-6 6" />
+          </svg>
+        }
+        {{ player.playerName }}
+        @if (player.hasDetail) {
+          <a class="detail-link" [routerLink]="['/spieler', player.playerId]" title="Spielerseite öffnen" (click)="$event.stopPropagation()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M7 17L17 7" /><path d="M8 7h9v9" />
+            </svg>
+          </a>
+        }
+      </span>
+    </td>
+    <td>{{ player.position !== null ? positionLabels[player.position] : '–' }}</td>
+    <td>
+      @if (player.match; as match) {
+        <span class="player-match">
+          @switch (match.status) {
+            @case ('Live') {
+              <span class="badge badge-critical">Live{{ match.minute ? ' · ' + match.minute + '′' : '' }}</span>
+            }
+            @case ('Finished') {
+              <span class="muted">Beendet</span>
+            }
+            @default {
+              <span class="muted">{{ match.kickoffAt | date: 'EEE HH:mm' : undefined : 'de' }}</span>
+            }
+          }
+          <span class="player-opponent">{{ match.isHome ? 'vs' : '@' }} {{ match.opponent ?? '?' }}</span>
+        </span>
+      } @else {
+        <span class="muted">kein Spiel</span>
+      }
+    </td>
+    <td class="player-points" [class.negative]="(player.points ?? 0) < 0">
+      {{ player.points !== null ? (player.points | number: '1.0-0' : 'de') : '–' }}
+    </td>
+    <td>
+      <div class="event-chips">
+        @for (event of player.events; track event.label) {
+          <span class="badge" [class]="event.badgeClass">{{ event.label }}</span>
+        }
+      </div>
+    </td>
+  </tr>
+  @if (isExpanded(player) && player.match) {
+    <tr class="timeline-row">
+      <td colspan="5">
+        <app-live-timeline [matchId]="player.match.matchId" [playerId]="player.playerId" />
+      </td>
+    </tr>
+  }
+</ng-template>

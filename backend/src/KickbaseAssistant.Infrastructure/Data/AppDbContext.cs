@@ -23,6 +23,11 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<PlayerSaleLock> PlayerSaleLocks => Set<PlayerSaleLock>();
     public DbSet<MarketListingHistory> MarketListingHistories => Set<MarketListingHistory>();
     public DbSet<PlayerMarking> PlayerMarkings => Set<PlayerMarking>();
+    public DbSet<LiveMatch> LiveMatches => Set<LiveMatch>();
+    public DbSet<LiveMatchPlayer> LiveMatchPlayers => Set<LiveMatchPlayer>();
+    public DbSet<LiveMatchPlayerEvent> LiveMatchPlayerEvents => Set<LiveMatchPlayerEvent>();
+    public DbSet<LiveManagerScore> LiveManagerScores => Set<LiveManagerScore>();
+    public DbSet<LiveManagerPlayer> LiveManagerPlayers => Set<LiveManagerPlayer>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -133,6 +138,74 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             m.Property(x => x.OwnLineupEstimate).HasConversion<string>().HasMaxLength(20);
 
             m.HasIndex(x => new { x.LeagueId, x.PlayerId }).IsUnique();
+        });
+
+        builder.Entity<LiveMatch>(match =>
+        {
+            match.Property(entity => entity.Id).HasMaxLength(50);
+            match.Property(entity => entity.CompetitionId).IsRequired().HasMaxLength(50);
+            match.Property(entity => entity.HomeTeamId).IsRequired().HasMaxLength(50);
+            match.Property(entity => entity.HomeTeamName).HasMaxLength(200);
+            match.Property(entity => entity.HomeTeamSymbol).HasMaxLength(10);
+            match.Property(entity => entity.AwayTeamId).IsRequired().HasMaxLength(50);
+            match.Property(entity => entity.AwayTeamName).HasMaxLength(200);
+            match.Property(entity => entity.AwayTeamSymbol).HasMaxLength(10);
+            match.Property(entity => entity.Minute).HasMaxLength(10);
+            match.Property(entity => entity.Status).HasConversion<string>().HasMaxLength(20);
+
+            match.HasIndex(entity => new { entity.CompetitionId, entity.KickoffAt });
+
+            match.HasMany(entity => entity.Players)
+                .WithOne(player => player.Match)
+                .HasForeignKey(player => player.MatchId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        builder.Entity<LiveMatchPlayer>(player =>
+        {
+            player.Property(entity => entity.MatchId).IsRequired().HasMaxLength(50);
+            player.Property(entity => entity.TeamId).IsRequired().HasMaxLength(50);
+            player.Property(entity => entity.PlayerId).IsRequired().HasMaxLength(50);
+            player.Property(entity => entity.PlayerName).IsRequired().HasMaxLength(200);
+
+            player.HasIndex(entity => new { entity.MatchId, entity.TeamId, entity.PlayerId }).IsUnique();
+
+            player.HasMany(entity => entity.Events)
+                .WithOne(matchEvent => matchEvent.Player)
+                .HasForeignKey(matchEvent => matchEvent.LiveMatchPlayerId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        builder.Entity<LiveMatchPlayerEvent>(matchEvent =>
+        {
+            matchEvent.Property(entity => entity.EventId).IsRequired().HasMaxLength(50);
+            matchEvent.Property(entity => entity.Title).HasMaxLength(200);
+
+            matchEvent.HasIndex(entity => new { entity.LiveMatchPlayerId, entity.EventId }).IsUnique();
+        });
+
+        builder.Entity<LiveManagerScore>(score =>
+        {
+            score.Property(entity => entity.LeagueId).IsRequired().HasMaxLength(50);
+            score.Property(entity => entity.ManagerId).IsRequired().HasMaxLength(50);
+            score.Property(entity => entity.ManagerName).IsRequired().HasMaxLength(200);
+
+            score.HasIndex(entity => new { entity.LeagueId, entity.ManagerId, entity.MatchdayNumber }).IsUnique();
+
+            score.HasMany(entity => entity.Players)
+                .WithOne(player => player.Score)
+                .HasForeignKey(player => player.LiveManagerScoreId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        builder.Entity<LiveManagerPlayer>(player =>
+        {
+            player.Property(entity => entity.PlayerId).IsRequired().HasMaxLength(50);
+            player.Property(entity => entity.PlayerName).IsRequired().HasMaxLength(200);
+            player.Property(entity => entity.TeamId).IsRequired().HasMaxLength(50);
+            player.Property(entity => entity.MatchId).HasMaxLength(50);
+
+            player.HasIndex(entity => new { entity.LiveManagerScoreId, entity.PlayerId }).IsUnique();
         });
 
         builder.Entity<LineupPrediction>(l =>

@@ -11,68 +11,34 @@
   </div>
 </div>
 
-@if (standingsForSelectedLeague(); as update) {
-  <div class="card card-table">
-    <div class="card-header" style="padding: 1.1rem 1.3rem 0">
-      <h2>{{ update.leagueName }} — Spieltag {{ update.matchday }}</h2>
-    </div>
-    <table>
-      <thead>
-        <tr>
-          <th>#</th>
-          <th>Manager</th>
-          <th>Spieltag-Punkte</th>
-          <th>Saison-Punkte</th>
-        </tr>
-      </thead>
-      <tbody>
-        @for (standing of update.standings; track standing.userId) {
-          <tr>
-            <td>{{ standing.matchdayRank }}</td>
-            <td>{{ standing.name }}</td>
-            <td>{{ standing.matchdayPoints | number: '1.0-0' }}</td>
-            <td>{{ standing.seasonPoints | number: '1.0-0' }}</td>
-          </tr>
-        }
-      </tbody>
-    </table>
-  </div>
-} @else if (fallbackSorted().length > 0) {
-  <div class="card card-table">
-    <div class="card-header" style="padding: 1.1rem 1.3rem 0">
-      <h2>Letzter bekannter Stand — Spieltag {{ fallbackSorted()[0].currentMatchday }}</h2>
-      <span class="badge badge-neutral">Nicht live</span>
-    </div>
-    <table>
-      <thead>
-        <tr>
-          <th>#</th>
-          <th>Manager</th>
-          <th>Spieltag-Punkte</th>
-          <th>Saison-Punkte</th>
-        </tr>
-      </thead>
-      <tbody>
-        @for (stat of fallbackSorted(); track stat.managerId) {
-          <tr>
-            <td>{{ stat.matchdayRank }}</td>
-            <td>{{ stat.managerName }}</td>
-            <td>{{ stat.matchdayPoints | number: '1.0-0' }}</td>
-            <td>{{ stat.seasonPoints | number: '1.0-0' }}</td>
-          </tr>
-        }
-      </tbody>
-    </table>
-    <p class="hint" style="padding: 0 1.3rem 1.1rem">
-      Kein Spiel gerade live (oder außerhalb des Polling-Fensters Fr/Sa/So) - das ist der Stand vom letzten
-      täglichen Abgleich, keine Echtzeit-Daten.
-    </p>
-  </div>
-} @else {
-  <div class="card">
-    <p class="empty-state">
-      Noch keine Daten für diese Liga. Sobald der Worker einmal gelaufen ist, erscheint hier der letzte
-      bekannte Stand, und während eines laufenden Spiels automatisch die Live-Daten.
-    </p>
-  </div>
+<div class="live-tabs" role="tablist">
+  <button
+    type="button"
+    role="tab"
+    class="live-tab"
+    [class.live-tab-active]="activeTab() === 'spiele'"
+    [attr.aria-selected]="activeTab() === 'spiele'"
+    (click)="onTabClick('spiele')"
+  >
+    Spiele
+  </button>
+  <button
+    type="button"
+    role="tab"
+    class="live-tab"
+    [class.live-tab-active]="activeTab() === 'liga'"
+    [attr.aria-selected]="activeTab() === 'liga'"
+    (click)="onTabClick('liga')"
+  >
+    Liga
+  </button>
+</div>
+
+@switch (activeTab()) {
+  @case ('liga') {
+    <app-live-league />
+  }
+  @default {
+    <app-live-matches />
+  }
 }

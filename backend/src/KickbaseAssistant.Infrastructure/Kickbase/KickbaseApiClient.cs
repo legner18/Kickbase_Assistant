@@ -1,3 +1,4 @@
+using System.Net;
 using System.Text.Json;
 using KickbaseAssistant.Infrastructure.Kickbase.Dtos;
 
@@ -49,8 +50,23 @@ public class KickbaseApiClient(IHttpClientFactory httpClientFactory)
     public async Task<IReadOnlyList<KickbaseActivityItemDto>> GetActivitiesFeedAsync(string leagueId, CancellationToken ct = default) =>
         (await GetAsync<KickbaseActivityFeedResponseDto>($"/v4/leagues/{leagueId}/activitiesFeed", ct)).Activities;
 
-    public Task<JsonElement> GetTeamCenterAsync(string leagueId, string userId, int dayNumber, CancellationToken ct = default) =>
-        GetJsonAsync($"/v4/leagues/{leagueId}/users/{userId}/teamcenter?dayNumber={dayNumber}", ct);
+    public Task<KickbaseManagerTeamCenterDto> GetManagerTeamCenterAsync(
+        string leagueId, string userId, int dayNumber, CancellationToken ct = default) =>
+        GetAsync<KickbaseManagerTeamCenterDto>($"/v4/leagues/{leagueId}/users/{userId}/teamcenter?dayNumber={dayNumber}", ct);
+
+    public Task<KickbasePlayerCenterDto> GetPlayerCenterAsync(
+        string competitionId, string playerId, int day, CancellationToken ct = default) =>
+        GetAsync<KickbasePlayerCenterDto>($"/v4/competitions/{competitionId}/playercenter/{playerId}?day={day}", ct);
+
+    public async Task<IReadOnlyList<KickbaseEventTypeDto>> GetEventTypesAsync(CancellationToken ct = default) =>
+        (await GetAsync<KickbaseEventTypesResponseDto>("/v4/live/eventtypes", ct, acceptLanguage: "de-DE")).Types;
+
+    public static bool IsBlockedResponse(Exception exception) =>
+        exception is HttpRequestException { StatusCode: HttpStatusCode.TooManyRequests or HttpStatusCode.Forbidden };
+
+    public Task<KickbaseTeamCenterDto> GetCompetitionTeamCenterAsync(
+        string competitionId, string teamId, int day, CancellationToken ct = default) =>
+        GetAsync<KickbaseTeamCenterDto>($"/v4/competitions/{competitionId}/teams/{teamId}/teamcenter?day={day}", ct);
 
     public Task<KickbaseRankingDto> GetRankingAsync(string leagueId, CancellationToken ct = default) =>
         GetAsync<KickbaseRankingDto>($"/v4/leagues/{leagueId}/ranking", ct);
@@ -119,10 +135,16 @@ public class KickbaseApiClient(IHttpClientFactory httpClientFactory)
         return doc.RootElement.Clone();
     }
 
-    private async Task<T> GetAsync<T>(string requestUri, CancellationToken ct)
+    private async Task<T> GetAsync<T>(string requestUri, CancellationToken ct, string? acceptLanguage = null)
     {
         using var client = CreateClient();
-        using var response = await client.GetAsync(requestUri, ct);
+        using var request = new HttpRequestMessage(HttpMethod.Get, requestUri);
+        if (acceptLanguage is not null)
+        {
+            request.Headers.AcceptLanguage.ParseAdd(acceptLanguage);
+        }
+
+        using var response = await client.SendAsync(request, ct);
         response.EnsureSuccessStatusCode();
 
         await using var stream = await response.Content.ReadAsStreamAsync(ct);

@@ -9,6 +9,11 @@ import {
   LeagueManager,
   LeagueTransfer,
   LineupOptimizerResult,
+  LiveManagerDetail,
+  LiveManagerStandings,
+  LiveMatchday,
+  LivePlayerTimeline,
+  LiveTeamPoints,
   ManagerStat,
   MarketScanEntry,
   MarketValueHistoryPoint,
@@ -118,5 +123,27 @@ export class ApiService {
 
   getTransfers(leagueId: string): Observable<LeagueTransfer[]> {
     return this.http.get<LeagueTransfer[]>(`${this.base}/api/leagues/${leagueId}/transfers`);
+  }
+
+  getLiveMatches(leagueId: string): Observable<LiveMatchday> {
+    return this.http.get<LiveMatchday>(`${this.base}/api/leagues/${leagueId}/live-matches`);
+  }
+
+  getLiveTeamPoints(leagueId: string, matchId: string, teamId: string): Observable<LiveTeamPoints> {
+    return this.http.get<LiveTeamPoints>(`${this.base}/api/leagues/${leagueId}/live-matches/${matchId}/teams/${teamId}`);
+  }
+
+  getLivePlayerTimeline(leagueId: string, matchId: string, playerId: string): Observable<LivePlayerTimeline> {
+    return this.http.get<LivePlayerTimeline>(
+      `${this.base}/api/leagues/${leagueId}/live-matches/${matchId}/players/${playerId}/timeline`,
+    );
+  }
+
+  getLiveManagers(leagueId: string): Observable<LiveManagerStandings> {
+    return this.http.get<LiveManagerStandings>(`${this.base}/api/leagues/${leagueId}/live-managers`);
+  }
+
+  getLiveManager(leagueId: string, managerId: string): Observable<LiveManagerDetail> {
+    return this.http.get<LiveManagerDetail>(`${this.base}/api/leagues/${leagueId}/live-managers/${managerId}`);
   }
 }

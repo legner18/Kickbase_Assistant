@@ -1,46 +1,25 @@
-import { DecimalPipe } from '@angular/common';
-import { Component, OnDestroy, OnInit, computed, effect, inject, signal } from '@angular/core';
-import { ApiService } from '../../core/api.service';
+import { Component, OnDestroy, OnInit, inject, signal } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
 import { LeagueContextService } from '../../core/league-context.service';
 import { LiveHubService } from '../../core/live-hub.service';
-import { ManagerStat } from '../../core/models';
+import { LiveLeagueComponent } from './live-league/live-league.component';
+import { LiveMatchesComponent } from './live-matches/live-matches.component';
+
+type LiveTab = 'spiele' | 'liga';
 
 @Component({
   selector: 'app-live',
-  imports: [DecimalPipe],
+  imports: [LiveLeagueComponent, LiveMatchesComponent],
   templateUrl: './live.component.html',
   styleUrl: './live.component.css',
 })
 export class LiveComponent implements OnInit, OnDestroy {
-  private readonly api = inject(ApiService);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   readonly leagueContext = inject(LeagueContextService);
   readonly liveHub = inject(LiveHubService);
 
-  readonly fallbackStats = signal<ManagerStat[]>([]);
-
-  readonly standingsForSelectedLeague = computed(() => {
-    const update = this.liveHub.lastUpdate();
-    const leagueId = this.leagueContext.selectedLeagueId();
-    if (!update || update.leagueId !== leagueId) {
-      return null;
-    }
-    return update;
-  });
-
-  // Fallback ("last known standings") for when no live push has arrived yet this session -
-  // without it the page shows nothing at all until the Worker's next 90s poll during a live
-  // match, even if the page was simply just opened. Sourced from LeagueManagerStat, which
-  // LeagueAnalysisJob already refreshes daily from the same ranking endpoint.
-  readonly fallbackSorted = computed(() => [...this.fallbackStats()].sort((a, b) => a.matchdayRank - b.matchdayRank));
-
-  constructor() {
-    effect(() => {
-      const leagueId = this.leagueContext.selectedLeagueId();
-      if (leagueId) {
-        this.api.getManagerStats(leagueId).subscribe((stats) => this.fallbackStats.set(stats));
-      }
-    });
-  }
+  readonly activeTab = signal<LiveTab>(this.route.snapshot.queryParamMap.get('tab') === 'liga' ? 'liga' : 'spiele');
 
   ngOnInit(): void {
     this.leagueContext.ensureLoaded();
@@ -49,5 +28,14 @@ export class LiveComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.liveHub.disconnect();
+  }
+
+  onTabClick(tab: LiveTab): void {
+    this.activeTab.set(tab);
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { tab: tab === 'liga' ? 'liga' : null },
+      replaceUrl: true,
+    });
   }
 }

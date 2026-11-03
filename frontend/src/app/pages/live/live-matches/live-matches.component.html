@@ -1,0 +1,163 @@
+@if (matchesLoading()) {
+  <div class="card"><div class="skeleton" style="height: 260px"></div></div>
+} @else if (matches().length > 0) {
+  <div class="matchday-header">
+    <h2>Spieltag {{ matchday()?.matchday }}</h2>
+    @if (liveMatchCount() > 0) {
+      <span class="badge badge-critical">{{ liveMatchCount() }} live</span>
+    } @else if (matchday()?.nextKickoffAt) {
+      <span class="matchday-next">Nächster Anpfiff {{ matchday()?.nextKickoffAt | date: 'EEE dd.MM. HH:mm' : undefined : 'de' }} Uhr</span>
+    }
+  </div>
+
+  <div class="live-layout">
+    <div class="match-list">
+      @for (match of matches(); track match.matchId) {
+        <div class="match-card" [class.match-card-live]="match.status === 'Live'">
+          <div class="match-meta">
+            @switch (match.status) {
+              @case ('Live') {
+                <span class="badge badge-critical">Live{{ match.minute ? ' · ' + match.minute + '′' : '' }}</span>
+              }
+              @case ('Finished') {
+                <span class="badge badge-neutral">Beendet</span>
+              }
+              @default {
+                <span class="match-kickoff">{{ match.kickoffAt | date: 'EEE dd.MM. HH:mm' : undefined : 'de' }}</span>
+              }
+            }
+            @if (match.status !== 'NotStarted') {
+              <span class="match-points-label">Punkte</span>
+            }
+          </div>
+          @for (team of [match.home, match.away]; track team.teamId) {
+            <button
+              type="button"
+              class="team-row"
+              [class.team-row-selected]="isSelected(match, team)"
+              [disabled]="!canOpen(match)"
+              (click)="onTeamClick(match, team)"
+            >
+              <span class="team-name">{{ teamLabel(team) }}</span>
+              @if (team.ownPlayerCount > 0) {
+                <span class="badge badge-good" title="Eigene Spieler in diesem Spiel und ihre Punkte">
+                  {{ team.ownPlayerCount }} eigene · {{ team.ownPoints | number: '1.0-0' : 'de' }}
+                </span>
+              }
+              <span class="team-points" [class.negative]="(team.points ?? 0) < 0">
+                {{ team.points !== null ? (team.points | number: '1.0-0' : 'de') : '' }}
+              </span>
+              <span class="team-goals">{{ team.goals ?? '–' }}</span>
+            </button>
+          }
+        </div>
+      }
+    </div>
+
+    <div class="card card-table live-panel" #teamPanel>
+      @if (selectedTeam()) {
+        <div class="live-panel-header">
+          <div>
+            <h3>{{ teamPoints()?.teamName ?? '…' }}</h3>
+            @if (selectedMatch(); as match) {
+              <div class="live-panel-sub">
+                {{ teamLabel(match.home) }} {{ match.home.goals ?? '–' }}:{{ match.away.goals ?? '–' }} {{ teamLabel(match.away) }}
+                @if (teamPoints()?.pointsUpdatedAt; as updatedAt) {
+                  · Stand {{ updatedAt | date: 'HH:mm' }} Uhr
+                }
+              </div>
+            }
+          </div>
+          @if (teamPoints(); as points) {
+            <div class="live-panel-total" [class.negative]="(points.points ?? 0) < 0">
+              {{ points.points !== null ? (points.points | number: '1.0-0' : 'de') : '–' }}
+              <span>Punkte</span>
+            </div>
+          }
+        </div>
+
+        @if (teamLoading()) {
+          <div class="skeleton" style="height: 220px; margin: 0 1.3rem 1.1rem"></div>
+        } @else if (teamPlayers().length === 0) {
+          <p class="empty-state">Noch keine Spielerpunkte für diese Mannschaft - das Spiel läuft noch nicht oder wurde noch nicht abgefragt.</p>
+        } @else {
+          <table>
+            <thead>
+              <tr>
+                <th>Spieler</th>
+                <th>Pos</th>
+                <th>Punkte</th>
+                <th>Ereignisse</th>
+                <th>Besitzer</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (player of teamPlayers(); track player.playerId) {
+                <tr
+                  [class.clickable-row]="player.hasTimeline"
+                  [class.own-row]="player.isMine"
+                  [class.expanded-row]="isExpanded(player)"
+                  (click)="onPlayerClick(player)"
+                >
+                  <td>
+                    <span class="player-name">
+                      @if (player.hasTimeline) {
+                        <svg class="expand-icon" [class.expand-icon-open]="isExpanded(player)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M9 6l6 6-6 6" />
+                        </svg>
+                      }
+                      {{ player.playerName }}
+                      @if (player.hasDetail) {
+                        <a class="detail-link" [routerLink]="['/spieler', player.playerId]" title="Spielerseite öffnen" (click)="$event.stopPropagation()">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M7 17L17 7" /><path d="M8 7h9v9" />
+                          </svg>
+                        </a>
+                      }
+                    </span>
+                  </td>
+                  <td>{{ player.position !== null ? positionLabels[player.position] : '–' }}</td>
+                  <td class="player-points" [class.negative]="player.points < 0">{{ player.points | number: '1.0-0' : 'de' }}</td>
+                  <td>
+                    <div class="event-chips">
+                      @for (event of player.events; track event.label) {
+                        <span class="badge" [class]="event.badgeClass">{{ event.label }}</span>
+                      }
+                    </div>
+                  </td>
+                  <td>
+                    @if (player.isMine) {
+                      <span class="badge badge-good">Ich</span>
+                    } @else if (player.ownerManagerName) {
+                      {{ player.ownerManagerName }}
+                    } @else {
+                      <span class="muted">–</span>
+                    }
+                  </td>
+                </tr>
+                @if (isExpanded(player)) {
+                  @if (teamPoints(); as points) {
+                    <tr class="timeline-row">
+                      <td colspan="5">
+                        <app-live-timeline [matchId]="points.matchId" [playerId]="player.playerId" />
+                      </td>
+                    </tr>
+                  }
+                }
+              }
+            </tbody>
+          </table>
+        }
+      } @else {
+        <p class="empty-state">Klick auf eine Mannschaft, um die Punkte ihrer Spieler zu sehen.</p>
+      }
+    </div>
+  </div>
+} @else {
+  <div class="card">
+    <p class="empty-state">
+      Noch keine Spiele vorhanden. Sobald der Worker den Spielplan geladen hat, erscheinen hier die Spiele des
+      aktuellen Spieltags.
+    </p>
+  </div>
+}

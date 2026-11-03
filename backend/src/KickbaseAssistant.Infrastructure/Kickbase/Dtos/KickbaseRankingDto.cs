@@ -42,6 +42,9 @@ public class KickbaseRankingUserDto
     [JsonPropertyName("mdpl")]
     public int MatchdayRank { get; set; }
 
+    [JsonPropertyName("pa")]
+    public bool? PointsCounted { get; set; }
+
     /// <summary>Teamwert (Summe Marktwerte des Kaders), von Kickbase selbst berechnet - live
     /// verifiziert am 2026-10-11, inkl. Nachkommastellen (Double statt Int wie bei Player.MarketValue,
     /// Vorsicht beim Vergleich/Runden).</summary>

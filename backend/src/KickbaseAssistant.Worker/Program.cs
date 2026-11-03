@@ -57,14 +57,14 @@ builder.Services.AddQuartz(q =>
         // in der DB steht.
         .WithCronSchedule("0 50 22 * * ?", x => x.InTimeZone(germanyTimeZone)));
 
-    var liveScoreJobKey = new JobKey(nameof(LiveScoreJob));
-    q.AddJob<LiveScoreJob>(opts => opts.WithIdentity(liveScoreJobKey));
+    var liveMatchJobKey = new JobKey(nameof(LiveMatchJob));
+    q.AddJob<LiveMatchJob>(opts => opts.WithIdentity(liveMatchJobKey));
     q.AddTrigger(t => t
-        .ForJob(liveScoreJobKey)
-        .WithIdentity($"{nameof(LiveScoreJob)}-trigger")
-        // Feuert immer alle 90s, der Job selbst prüft intern das Zeitfenster/"il"-Flag und tut
-        // außerhalb davon nichts (siehe LiveScoreJob-Doku).
-        .WithSimpleSchedule(s => s.WithIntervalInSeconds(90).RepeatForever())
+        .ForJob(liveMatchJobKey)
+        .WithIdentity($"{nameof(LiveMatchJob)}-trigger")
+        // Alle 30s - Kickbase-Aufrufe gibt es nur für Spiele, die gerade laufen, und Timelines für
+        // jeden Spieler, dessen Live-Punkte der zuletzt geladenen Timeline voraus sind.
+        .WithSimpleSchedule(s => s.WithIntervalInSeconds(30).RepeatForever())
         .StartNow());
 
     var transferMarketScanJobKey = new JobKey(nameof(TransferMarketScanJob));
@@ -129,7 +129,7 @@ builder.Services.AddQuartz(q =>
     q.AddTrigger(t => t
         .ForJob(liveMarketJobKey)
         .WithIdentity($"{nameof(LiveMarketJob)}-trigger")
-        // Feuert alle 60s wie LiveScoreJob, der Job selbst pausiert nachts (1-7 Uhr) und pusht nur
+        // Feuert alle 60s, der Job selbst pausiert nachts (1-7 Uhr) und pusht nur
         // bei echten Änderungen (siehe MarketChangeDetector) - kein Dauerfeuer ohne neue Daten.
         .WithSimpleSchedule(s => s.WithIntervalInSeconds(60).RepeatForever())
         .StartNow());
