@@ -52,6 +52,52 @@
   </div>
 }
 
+@if (financeCheck(); as finance) {
+  <div class="card">
+    <div class="card-header">
+      <h2>Finanz-Check</h2>
+      <a routerLink="/simulator">Simulator öffnen →</a>
+    </div>
+    <div class="finance-grid">
+      <div>
+        <div class="stat-label">Verfügbar zum Investieren</div>
+        <div class="stat" [class.negative]="finance.availableToInvest < 0">{{ finance.availableToInvest | number: '1.0-0' : 'de' }} €</div>
+        <div class="stat-sub">Kontostand + Kreditrahmen</div>
+      </div>
+      <div>
+        <div class="stat-label">Offene Gebote</div>
+        <div class="stat">{{ finance.offersTotal | number: '1.0-0' : 'de' }} €</div>
+        <div class="stat-sub">{{ finance.offers.length }} {{ finance.offers.length === 1 ? 'Gebot' : 'Gebote' }}</div>
+      </div>
+      <div>
+        <div class="stat-label">Kontostand nach Annahme</div>
+        <div class="stat" [class.negative]="finance.balanceAfterOffers < 0">{{ finance.balanceAfterOffers | number: '1.0-0' : 'de' }} €</div>
+        <div class="stat-sub">wenn alle Gebote durchgehen</div>
+      </div>
+      <div>
+        <div class="stat-label">Noch verfügbar inkl. Gebote</div>
+        <div class="stat" [class.negative]="finance.availableAfterOffers < 0">{{ finance.availableAfterOffers | number: '1.0-0' : 'de' }} €</div>
+        <div class="stat-sub">Spielraum für weitere Gebote</div>
+      </div>
+    </div>
+    @if (finance.offers.length === 0) {
+      <p class="hint finance-empty">Keine offenen Gebote.</p>
+    } @else {
+      <div class="finance-offers">
+        @for (offer of finance.offers; track offer.playerId) {
+          <div class="mover-row">
+            <a [routerLink]="['/spieler', offer.playerId]">{{ offer.playerName }}</a>
+            <span>
+              {{ offer.offerPrice | number: '1.0-0' : 'de' }} €
+              <span class="muted">· MW {{ offer.marketValue | number: '1.0-0' : 'de' }} € · bis {{ offer.expiresAt | date: 'dd.MM. HH:mm' }}</span>
+            </span>
+          </div>
+        }
+      </div>
+    }
+  </div>
+}
+
 <div class="card-grid">
   <div class="card stat-card">
     <div>
@@ -72,6 +118,22 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 8-3 8h18s-3-1-3-8" /><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" /></svg>
     </div>
   </div>
+  @if (forecast(); as squadForecast) {
+    <div class="card stat-card">
+      <div>
+        <div class="stat-label">Tagestrend Kader</div>
+        <div class="stat" [class.positive]="squadForecast.dailyTrend > 0" [class.negative]="squadForecast.dailyTrend < 0">
+          {{ squadForecast.dailyTrend | signedNumber }} €
+        </div>
+        <div class="stat-sub">
+          Prognose nächstes Update {{ squadForecast.predictedNextChange | signedNumber }} €
+        </div>
+      </div>
+      <div class="stat-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17 9 11l4 4 8-8" /><path d="M15 6h6v6" /></svg>
+      </div>
+    </div>
+  }
   <div class="card stat-card">
     <div>
       <div class="stat-label">Aktive Ligen</div>

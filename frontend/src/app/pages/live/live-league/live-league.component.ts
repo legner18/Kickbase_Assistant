@@ -3,7 +3,7 @@ import { Component, ElementRef, computed, effect, inject, signal, untracked, vie
 import { RouterLink } from '@angular/router';
 import { ApiService } from '../../../core/api.service';
 import { LeagueContextService } from '../../../core/league-context.service';
-import { LiveHubService } from '../../../core/live-hub.service';
+import { createNowSignal, isLiveDataStale, onLiveRefresh } from '../../../core/live-refresh';
 import { summarizeMatchEvents } from '../../../core/match-events';
 import {
   LiveManagerDetail,
@@ -12,19 +12,22 @@ import {
   LiveManagerStandings,
   POSITION_LABELS,
 } from '../../../core/models';
+import { createPointsChangeTracker } from '../../../core/points-change-tracker';
+import { SignedNumberPipe } from '../../../shared/signed-number.pipe';
 import { LiveTimelineComponent } from '../live-timeline/live-timeline.component';
 
 @Component({
   selector: 'app-live-league',
-  imports: [DatePipe, DecimalPipe, NgTemplateOutlet, RouterLink, LiveTimelineComponent],
+  imports: [DatePipe, DecimalPipe, NgTemplateOutlet, RouterLink, SignedNumberPipe, LiveTimelineComponent],
   templateUrl: './live-league.component.html',
   styleUrl: './live-league.component.css',
 })
 export class LiveLeagueComponent {
   private readonly api = inject(ApiService);
   private readonly leagueContext = inject(LeagueContextService);
-  private readonly liveHub = inject(LiveHubService);
-  private readonly initialLiveUpdate = this.liveHub.lastLiveMatchesUpdate();
+  private readonly now = createNowSignal();
+  private readonly standingsChanges = createPointsChangeTracker();
+  private readonly playerChanges = createPointsChangeTracker();
 
   private readonly managerPanel = viewChild<ElementRef<HTMLElement>>('managerPanel');
 
@@ -36,11 +39,31 @@ export class LiveLeagueComponent {
   readonly expandedPlayerId = signal<string | null>(null);
   readonly positionLabels = POSITION_LABELS;
 
-  readonly managers = computed(() => this.standings()?.managers ?? []);
+  readonly managers = computed(() => {
+    const deltas = this.standingsChanges.deltas();
+    return (this.standings()?.managers ?? []).map((standing) => ({
+      ...standing,
+      pointsDelta: deltas.get(standing.managerId) ?? 0,
+    }));
+  });
 
-  readonly players = computed(() =>
-    (this.manager()?.players ?? []).map((player) => ({ ...player, events: summarizeMatchEvents(player.eventKeys) })),
+  readonly standingsStale = computed(
+    () => this.managers().some((standing) => standing.liveCount > 0) && isLiveDataStale(this.standings()?.updatedAt, this.now()),
   );
+
+  readonly selectedManagerDelta = computed(() => {
+    const managerId = this.selectedManagerId();
+    return managerId ? (this.standingsChanges.deltas().get(managerId) ?? 0) : 0;
+  });
+
+  readonly players = computed(() => {
+    const deltas = this.playerChanges.deltas();
+    return (this.manager()?.players ?? []).map((player) => ({
+      ...player,
+      events: summarizeMatchEvents(player.eventKeys),
+      pointsDelta: deltas.get(player.playerId) ?? 0,
+    }));
+  });
 
   readonly lineupPlayers = computed(() => this.players().filter((player) => player.inLineup));
 
@@ -59,24 +82,17 @@ export class LiveLeagueComponent {
       }
     });
 
-    effect(() => {
-      const update = this.liveHub.lastLiveMatchesUpdate();
-      if (!update || update === this.initialLiveUpdate) {
+    onLiveRefresh(() => {
+      const leagueId = this.leagueContext.selectedLeagueId();
+      if (!leagueId) {
         return;
       }
 
-      untracked(() => {
-        const leagueId = this.leagueContext.selectedLeagueId();
-        if (!leagueId || this.leagueContext.selectedLeague()?.competitionId !== update.competitionId) {
-          return;
-        }
-
-        this.loadStandings(leagueId, true);
-        const managerId = this.selectedManagerId();
-        if (managerId) {
-          this.loadManager(leagueId, managerId, true);
-        }
-      });
+      this.loadStandings(leagueId, true);
+      const managerId = this.selectedManagerId();
+      if (managerId) {
+        this.loadManager(leagueId, managerId, true);
+      }
     });
   }
 
@@ -118,6 +134,10 @@ export class LiveLeagueComponent {
     }
     this.api.getLiveManagers(leagueId).subscribe({
       next: (standings) => {
+        this.standingsChanges.update(
+          standings.managers.map((standing) => [standing.managerId, standing.points] as const),
+          silent,
+        );
         this.standings.set(standings);
         this.standingsLoading.set(false);
 
@@ -139,6 +159,10 @@ export class LiveLeagueComponent {
     this.api.getLiveManager(leagueId, managerId).subscribe({
       next: (manager) => {
         if (this.selectedManagerId() === managerId) {
+          this.playerChanges.update(
+            manager.players.map((player) => [player.playerId, player.points] as const),
+            silent,
+          );
           this.manager.set(manager);
         }
         this.managerLoading.set(false);

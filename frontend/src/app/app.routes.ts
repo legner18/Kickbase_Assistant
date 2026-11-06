@@ -4,11 +4,15 @@ import { DashboardComponent } from './pages/dashboard/dashboard.component';
 import { LeagueAnalysisComponent } from './pages/league-analysis/league-analysis.component';
 import { LineupOptimizerComponent } from './pages/lineup-optimizer/lineup-optimizer.component';
 import { LiveComponent } from './pages/live/live.component';
+import { MarketReportComponent } from './pages/market-report/market-report.component';
 import { MarketScanComponent } from './pages/market-scan/market-scan.component';
+import { MatchdayComponent } from './pages/matchday/matchday.component';
 import { PlayerDetailComponent } from './pages/player-detail/player-detail.component';
 import { SellAlertsComponent } from './pages/sell-alerts/sell-alerts.component';
 import { SellPlanComponent } from './pages/sell-plan/sell-plan.component';
+import { SimulatorComponent } from './pages/simulator/simulator.component';
 import { SquadComponent } from './pages/squad/squad.component';
+import { TransferBalanceComponent } from './pages/transfer-balance/transfer-balance.component';
 import { ValueRankingComponent } from './pages/value-ranking/value-ranking.component';
 
 export const routes: Routes = [
@@ -16,10 +20,14 @@ export const routes: Routes = [
   { path: 'kader', component: SquadComponent },
   { path: 'verkaufs-alarm', component: SellAlertsComponent },
   { path: 'verkaufsplaner', component: SellPlanComponent },
+  { path: 'simulator', component: SimulatorComponent },
+  { path: 'transfer-bilanz', component: TransferBalanceComponent },
   { path: 'aufstellung', component: LineupOptimizerComponent },
   { path: 'transfermarkt', component: MarketScanComponent },
+  { path: 'marktbericht', component: MarketReportComponent },
   { path: 'liga-analyse', component: LeagueAnalysisComponent },
   { path: 'live', component: LiveComponent },
+  { path: 'spieltag', component: MatchdayComponent },
   { path: 'preis-leistung', component: ValueRankingComponent },
   { path: 'spieler/:id', component: PlayerDetailComponent },
   { path: 'archiv', component: ArchivedLeaguesComponent },

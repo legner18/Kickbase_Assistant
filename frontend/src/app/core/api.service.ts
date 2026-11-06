@@ -4,7 +4,12 @@ import { Observable } from 'rxjs';
 import { API_BASE_URL } from './api-config';
 import {
   FairValueComparisonEntry,
+  FairValueRadar,
+  FinanceCheck,
   League,
+  LeagueOverview,
+  MarketReport,
+  MatchdayOverview,
   LeagueBalanceStatus,
   LeagueManager,
   LeagueTransfer,
@@ -25,6 +30,9 @@ import {
   SellAlert,
   SellPlan,
   SetMarkingRequest,
+  SimulatorData,
+  SquadForecast,
+  TransferBalance,
   ValueRankingEntry,
 } from './models';
 
@@ -55,6 +63,46 @@ export class ApiService {
 
   toggleSellLock(leagueId: string, playerId: string): Observable<{ locked: boolean }> {
     return this.http.post<{ locked: boolean }>(`${this.base}/api/leagues/${leagueId}/sell-plan/lock/${playerId}`, {});
+  }
+
+  getTransferBalance(leagueId: string): Observable<TransferBalance> {
+    return this.http.get<TransferBalance>(`${this.base}/api/leagues/${leagueId}/transfer-balance`);
+  }
+
+  getSquadForecast(leagueId: string): Observable<SquadForecast> {
+    return this.http.get<SquadForecast>(`${this.base}/api/leagues/${leagueId}/squad-forecast`);
+  }
+
+  getFinanceCheck(leagueId: string): Observable<FinanceCheck> {
+    return this.http.get<FinanceCheck>(`${this.base}/api/leagues/${leagueId}/finance-check`);
+  }
+
+  getSimulator(leagueId: string): Observable<SimulatorData> {
+    return this.http.get<SimulatorData>(`${this.base}/api/leagues/${leagueId}/simulator`);
+  }
+
+  getMarketReport(leagueId: string, matchday?: number): Observable<MarketReport> {
+    const params: Record<string, string> = {};
+    if (matchday) {
+      params['matchday'] = String(matchday);
+    }
+    return this.http.get<MarketReport>(`${this.base}/api/leagues/${leagueId}/market-report`, { params });
+  }
+
+  getMatchday(leagueId: string, matchday?: number): Observable<MatchdayOverview> {
+    const params: Record<string, string> = {};
+    if (matchday) {
+      params['matchday'] = String(matchday);
+    }
+    return this.http.get<MatchdayOverview>(`${this.base}/api/leagues/${leagueId}/matchday`, { params });
+  }
+
+  getLeagueOverview(leagueId: string): Observable<LeagueOverview> {
+    return this.http.get<LeagueOverview>(`${this.base}/api/leagues/${leagueId}/league-overview`);
+  }
+
+  getFairValueRadar(leagueId: string): Observable<FairValueRadar> {
+    return this.http.get<FairValueRadar>(`${this.base}/api/leagues/${leagueId}/fair-value-radar`);
   }
 
   getLineupOptimizer(leagueId: string): Observable<LineupOptimizerResult> {

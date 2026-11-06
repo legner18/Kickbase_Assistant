@@ -7,6 +7,21 @@
   height: 8px;
 }
 
+.last-poll {
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
+.live-warning {
+  margin: 0 0 1rem;
+  padding: 0.6rem 0.8rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.88rem;
+  background: color-mix(in srgb, var(--status-warning) 18%, transparent);
+  color: var(--text-primary);
+}
+
 .live-tabs {
   display: flex;
   gap: 0.25rem;

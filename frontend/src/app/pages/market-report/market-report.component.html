@@ -1,0 +1,201 @@
+<div class="card-header page-header">
+  <div>
+    <h1>Marktbericht</h1>
+    <p class="hint">
+      Marktwerte aller Bundesliga-Spieler
+      @if (report()?.latestDate; as latestDate) {
+        · Stand {{ latestDate | date: 'dd.MM.yyyy' }}
+      }
+    </p>
+  </div>
+  <button class="icon-btn" (click)="onRefreshClick()" title="Aktualisieren">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 12a9 9 0 1 1-2.6-6.4" /><path d="M21 4v5h-5" />
+    </svg>
+  </button>
+</div>
+
+@if (loading()) {
+  <div class="card"><div class="skeleton" style="height: 320px"></div></div>
+} @else if (!report()) {
+  <p class="empty-state">Keine Marktdaten vorhanden.</p>
+} @else {
+  @let marketReport = report()!;
+
+  <div class="card">
+    <div class="card-header"><h2>Der Markt</h2></div>
+    @if (marketReport.today; as today) {
+      <div class="market-headline">
+        <div>
+          <div class="stat-label">Heute</div>
+          <div class="stat" [class.positive]="today.totalChange > 0" [class.negative]="today.totalChange < 0">
+            {{ formatMillions(today.totalChange) }}
+          </div>
+          <div class="stat-sub">
+            {{ today.risingCount }} gestiegen · {{ today.fallingCount }} gefallen · {{ today.unchangedCount }} unverändert
+          </div>
+        </div>
+        <div>
+          <div class="stat-label">Serie</div>
+          <div class="stat">{{ marketReport.streak }}. Tag</div>
+          <div class="stat-sub">in Folge {{ today.totalChange >= 0 ? 'im Plus' : 'im Minus' }}</div>
+        </div>
+        @if (marketReport.bestDay; as bestDay) {
+          <div>
+            <div class="stat-label">Bester Tag</div>
+            <div class="stat">{{ formatMillions(bestDay.totalChange) }}</div>
+            <div class="stat-sub">{{ bestDay.date | date: 'dd.MM.' }}</div>
+          </div>
+        }
+        @if (marketReport.worstDay; as worstDay) {
+          <div>
+            <div class="stat-label">Schwächster Tag</div>
+            <div class="stat">{{ formatMillions(worstDay.totalChange) }}</div>
+            <div class="stat-sub">{{ worstDay.date | date: 'dd.MM.' }}</div>
+          </div>
+        }
+      </div>
+    } @else {
+      <p class="hint no-data">
+        Für heute gibt es noch keinen Tagesvergleich. Die Marktwerte aller Bundesliga-Spieler werden jeden Abend um
+        23:05 Uhr geladen, der erste Vergleich steht nach zwei Abenden.
+      </p>
+    }
+
+    @if (bars().length > 0) {
+      <div class="chart-title">Tägliche Marktwert-Änderung, Summe aller Spieler</div>
+      <div class="chart-wrap" (mouseleave)="onChartMouseLeave()">
+        <svg [attr.viewBox]="'0 0 ' + chartWidth + ' ' + chartHeight" role="img" aria-label="Tägliche Marktwert-Änderung des Gesamtmarkts">
+          @for (tick of yTicks(); track tick.value) {
+            <line class="grid-line" [attr.x1]="plotLeft" [attr.x2]="plotRight" [attr.y1]="tick.y" [attr.y2]="tick.y" />
+            <text class="axis-label" [attr.x]="plotLeft - 8" [attr.y]="tick.y + 4" text-anchor="end">
+              {{ tick.value === 0 ? '0' : formatMillions(tick.value) }}
+            </text>
+          }
+          @for (bar of bars(); track bar.day.date; let index = $index) {
+            <path class="bar" [class.bar-positive]="bar.isPositive" [class.bar-negative]="!bar.isPositive" [class.bar-dimmed]="hoverIndex() !== null && hoverIndex() !== index" [attr.d]="bar.path" />
+            <text class="axis-label" [attr.x]="bar.labelX" [attr.y]="chartHeight - 8" text-anchor="middle">{{ bar.day.date | date: 'dd.' }}</text>
+            <rect
+              class="hit-area"
+              [attr.x]="bar.bandX"
+              [attr.y]="0"
+              [attr.width]="bar.bandWidth"
+              [attr.height]="chartHeight"
+              (mouseenter)="onBarMouseEnter(index)"
+            />
+          }
+          <line class="baseline" [attr.x1]="plotLeft" [attr.x2]="plotRight" [attr.y1]="baselineY()" [attr.y2]="baselineY()" />
+        </svg>
+        @if (hoveredBar(); as bar) {
+          <div class="chart-tooltip" [style.left.%]="tooltipLeftPercent(bar)">
+            <div class="tooltip-title">{{ bar.day.date | date: 'EEEE, dd.MM.' : undefined : 'de' }}</div>
+            <div>{{ formatMillions(bar.day.totalChange) }}</div>
+            <div class="muted">{{ bar.day.risingCount }} gestiegen · {{ bar.day.fallingCount }} gefallen</div>
+          </div>
+        }
+      </div>
+    }
+  </div>
+
+  <div class="mover-grid">
+    <div class="card">
+      <div class="card-header"><h2>Gewinner heute</h2></div>
+      @for (mover of marketReport.dailyWinners; track mover.playerId; let rank = $index) {
+        <div class="mover-row" (click)="onPlayerClick(mover.playerId)">
+          <span class="mover-rank">{{ rank + 1 }}</span>
+          <span class="mover-name">
+            {{ mover.playerName }}
+            <span class="muted">{{ mover.teamName ?? '' }} · {{ mover.ownerManagerName ?? 'frei' }}</span>
+          </span>
+          <span class="positive">{{ mover.change | signedNumber }} €</span>
+        </div>
+      } @empty {
+        <p class="hint no-data">Noch keine Daten.</p>
+      }
+    </div>
+    <div class="card">
+      <div class="card-header"><h2>Verlierer heute</h2></div>
+      @for (mover of marketReport.dailyLosers; track mover.playerId; let rank = $index) {
+        <div class="mover-row" (click)="onPlayerClick(mover.playerId)">
+          <span class="mover-rank">{{ rank + 1 }}</span>
+          <span class="mover-name">
+            {{ mover.playerName }}
+            <span class="muted">{{ mover.teamName ?? '' }} · {{ mover.ownerManagerName ?? 'frei' }}</span>
+          </span>
+          <span class="negative">{{ mover.change | signedNumber }} €</span>
+        </div>
+      } @empty {
+        <p class="hint no-data">Noch keine Daten.</p>
+      }
+    </div>
+    <div class="card">
+      <div class="card-header"><h2>Gewinner der Woche</h2></div>
+      @for (mover of marketReport.weeklyWinners; track mover.playerId; let rank = $index) {
+        <div class="mover-row" (click)="onPlayerClick(mover.playerId)">
+          <span class="mover-rank">{{ rank + 1 }}</span>
+          <span class="mover-name">
+            {{ mover.playerName }}
+            <span class="muted">{{ mover.teamName ?? '' }} · {{ mover.ownerManagerName ?? 'frei' }}</span>
+          </span>
+          <span class="positive">{{ mover.change | signedNumber }} €</span>
+        </div>
+      } @empty {
+        <p class="hint no-data">Braucht 7 Tage Marktdaten.</p>
+      }
+    </div>
+    <div class="card">
+      <div class="card-header"><h2>Verlierer der Woche</h2></div>
+      @for (mover of marketReport.weeklyLosers; track mover.playerId; let rank = $index) {
+        <div class="mover-row" (click)="onPlayerClick(mover.playerId)">
+          <span class="mover-rank">{{ rank + 1 }}</span>
+          <span class="mover-name">
+            {{ mover.playerName }}
+            <span class="muted">{{ mover.teamName ?? '' }} · {{ mover.ownerManagerName ?? 'frei' }}</span>
+          </span>
+          <span class="negative">{{ mover.change | signedNumber }} €</span>
+        </div>
+      } @empty {
+        <p class="hint no-data">Braucht 7 Tage Marktdaten.</p>
+      }
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <h2>TopXI</h2>
+      @if (marketReport.topEleven; as topEleven) {
+        <select (change)="onMatchdayChange($event)" aria-label="Spieltag">
+          @for (matchdayNumber of topEleven.availableMatchdays; track matchdayNumber) {
+            <option [value]="matchdayNumber" [selected]="matchdayNumber === topEleven.matchdayNumber">Spieltag {{ matchdayNumber }}</option>
+          }
+        </select>
+      }
+    </div>
+    @if (marketReport.topEleven; as topEleven) {
+      <p class="hint top-eleven-meta">
+        Formation {{ topEleven.formation }} · {{ topEleven.totalPoints | number: '1.0-0' : 'de' }} Punkte · beste Elf aus
+        {{ topEleven.candidateCount }} Eingesetzten
+      </p>
+      <div class="pitch">
+        @for (row of topElevenRows(); track row.position) {
+          <div class="pitch-row">
+            @for (player of row.players; track player.playerId) {
+              <button type="button" class="pitch-player" [class.pitch-mvp]="player.isMvp" (click)="onPlayerClick(player.playerId)">
+                <span class="pitch-points">{{ player.points }}</span>
+                <span class="pitch-name">{{ player.playerName }}</span>
+                <span class="pitch-meta">
+                  {{ positionLabels[player.position] }} · {{ player.ownerManagerName ?? 'frei' }}
+                  @if (player.isMvp) {
+                    · MVP
+                  }
+                </span>
+              </button>
+            }
+          </div>
+        }
+      </div>
+    } @else {
+      <p class="hint no-data">Noch kein abgeschlossener Spieltag mit Live-Daten.</p>
+    }
+  </div>
+}

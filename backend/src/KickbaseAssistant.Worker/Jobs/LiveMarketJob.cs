@@ -85,6 +85,8 @@ public class LiveMarketJob(
         string leagueId, string leagueName, List<ParsedTransferActivity> parsedTransfers, CancellationToken ct)
     {
         var listings = await kickbaseApiClient.GetMarketAsync(leagueId, ct);
+        await RecordOwnOffersAsync(leagueId, listings, ct);
+
         var current = listings.ToDictionary(
             p => p.Id,
             p => new MarketListingSnapshot(p.Id, p.Name, p.Price, p.OfferCount, DateTimeOffset.UtcNow.AddSeconds(p.ExpiresInSeconds)));
@@ -122,6 +124,51 @@ public class LiveMarketJob(
 
         await liveHubClient.PublishMarketUpdateAsync(leagueId, payload, ct);
         return true;
+    }
+
+    private async Task RecordOwnOffersAsync(
+        string leagueId, IReadOnlyList<KickbaseMarketPlayerDto> listings, CancellationToken ct)
+    {
+        var ownOffers = listings
+            .Where(listing => listing.UserOfferPrice is > 0)
+            .ToDictionary(listing => listing.Id);
+
+        var existing = await dbContext.OwnMarketOffers
+            .Where(offer => offer.LeagueId == leagueId)
+            .ToListAsync(ct);
+
+        dbContext.OwnMarketOffers.RemoveRange(existing.Where(offer => !ownOffers.ContainsKey(offer.PlayerId)));
+
+        var existingByPlayerId = existing.ToDictionary(offer => offer.PlayerId);
+        var now = DateTimeOffset.UtcNow;
+
+        foreach (var listing in ownOffers.Values)
+        {
+            if (!existingByPlayerId.TryGetValue(listing.Id, out var offer))
+            {
+                offer = new OwnMarketOffer { LeagueId = leagueId, PlayerId = listing.Id, PlayerName = listing.Name };
+                dbContext.OwnMarketOffers.Add(offer);
+            }
+
+            var offerPrice = listing.UserOfferPrice!.Value;
+            var expiresAt = now.AddSeconds(listing.ExpiresInSeconds);
+            var hasChanged = offer.Id == 0
+                || offer.OfferPrice != offerPrice
+                || offer.MarketValue != listing.MarketValue
+                || offer.ListingPrice != listing.Price
+                || Math.Abs((offer.ExpiresAt - expiresAt).TotalMinutes) >= 1;
+            if (!hasChanged)
+            {
+                continue;
+            }
+
+            offer.PlayerName = listing.Name;
+            offer.OfferPrice = offerPrice;
+            offer.MarketValue = listing.MarketValue;
+            offer.ListingPrice = listing.Price;
+            offer.ExpiresAt = expiresAt;
+            offer.UpdatedAt = now;
+        }
     }
 
     /// <summary>

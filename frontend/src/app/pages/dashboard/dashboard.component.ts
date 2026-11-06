@@ -4,7 +4,8 @@ import { RouterLink } from '@angular/router';
 import { catchError, of } from 'rxjs';
 import { ApiService } from '../../core/api.service';
 import { LeagueContextService } from '../../core/league-context.service';
-import { LeagueBalanceStatus, LeagueTransfer, Player, SellAlert } from '../../core/models';
+import { FinanceCheck, LeagueBalanceStatus, LeagueTransfer, Player, SellAlert, SquadForecast } from '../../core/models';
+import { SignedNumberPipe } from '../../shared/signed-number.pipe';
 
 const STATUS_LABELS: Record<LeagueBalanceStatus['status'], string> = {
   Green: 'Im Plus',
@@ -14,7 +15,7 @@ const STATUS_LABELS: Record<LeagueBalanceStatus['status'], string> = {
 
 @Component({
   selector: 'app-dashboard',
-  imports: [RouterLink, DecimalPipe, DatePipe],
+  imports: [RouterLink, DecimalPipe, DatePipe, SignedNumberPipe],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.css',
 })
@@ -26,6 +27,8 @@ export class DashboardComponent implements OnDestroy {
   readonly openAlerts = signal<SellAlert[]>([]);
   readonly transfers = signal<LeagueTransfer[]>([]);
   readonly balanceStatus = signal<LeagueBalanceStatus | null>(null);
+  readonly financeCheck = signal<FinanceCheck | null>(null);
+  readonly forecast = signal<SquadForecast | null>(null);
   readonly loading = signal(true);
   readonly now = signal(Date.now());
   private readonly countdownTimer = setInterval(() => this.now.set(Date.now()), 1000);
@@ -97,6 +100,14 @@ export class DashboardComponent implements OnDestroy {
       .getBalanceStatus(leagueId)
       .pipe(catchError(() => of(null)))
       .subscribe((status) => this.balanceStatus.set(status));
+    this.api
+      .getFinanceCheck(leagueId)
+      .pipe(catchError(() => of(null)))
+      .subscribe((financeCheck) => this.financeCheck.set(financeCheck));
+    this.api
+      .getSquadForecast(leagueId)
+      .pipe(catchError(() => of(null)))
+      .subscribe((forecast) => this.forecast.set(forecast));
   }
 
   ngOnDestroy(): void {

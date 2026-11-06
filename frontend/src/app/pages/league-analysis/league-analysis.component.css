@@ -82,3 +82,78 @@
     display: none;
   }
 }
+
+.manager-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr));
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.manager-tile {
+  margin-bottom: 0;
+}
+
+.manager-tile-me {
+  border-color: color-mix(in srgb, var(--primary) 45%, var(--border));
+}
+
+.manager-tile-header {
+  display: flex;
+  align-items: baseline;
+  gap: 0.45rem;
+  margin-bottom: 0.7rem;
+}
+
+.manager-rank {
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.manager-points {
+  margin-left: auto;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.manager-facts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.55rem 1rem;
+  margin: 0;
+}
+
+.manager-facts dt {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+.manager-facts dd {
+  margin: 0.1rem 0 0;
+  font-size: 0.9rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.segmented {
+  display: inline-flex;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.segmented button {
+  border: none;
+  border-radius: 0;
+  font-size: 0.8rem;
+}
+
+.segmented button + button {
+  border-left: 1px solid var(--border);
+}
+
+.segmented .segmented-active {
+  background: var(--primary);
+  color: var(--primary-ink);
+}

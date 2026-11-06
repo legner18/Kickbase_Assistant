@@ -28,6 +28,47 @@
   </div>
 </div>
 
+@if (isOwnSquad() && forecast(); as squadForecast) {
+  <div class="card-grid">
+    <div class="card stat-card">
+      <div>
+        <div class="stat-label">Tagestrend Kader</div>
+        <div class="stat" [class.positive]="squadForecast.dailyTrend > 0" [class.negative]="squadForecast.dailyTrend < 0">
+          {{ squadForecast.dailyTrend | signedNumber }} €
+        </div>
+        <div class="stat-sub">Summe der letzten MW-Änderungen</div>
+      </div>
+    </div>
+    <div class="card stat-card">
+      <div>
+        <div class="stat-label">Prognose nächstes Update</div>
+        <div class="stat" [class.positive]="squadForecast.predictedNextChange > 0" [class.negative]="squadForecast.predictedNextChange < 0">
+          {{ squadForecast.predictedNextChange | signedNumber }} €
+        </div>
+        <div class="stat-sub">MW-Update um 22 Uhr, Trend der letzten 5 Tage</div>
+      </div>
+    </div>
+    @if (squadForecast.predictedChangeUntilKickoff !== null) {
+      <div class="card stat-card">
+        <div>
+          <div class="stat-label">Prognose bis Anpfiff ST {{ squadForecast.nextMatchdayNumber }}</div>
+          <div
+            class="stat"
+            [class.positive]="squadForecast.predictedChangeUntilKickoff > 0"
+            [class.negative]="squadForecast.predictedChangeUntilKickoff < 0"
+          >
+            {{ squadForecast.predictedChangeUntilKickoff | signedNumber }} €
+          </div>
+          <div class="stat-sub">
+            {{ squadForecast.updatesUntilKickoff }} {{ squadForecast.updatesUntilKickoff === 1 ? 'Update' : 'Updates' }} bis
+            {{ squadForecast.nextKickoffAt | date: 'dd.MM. HH:mm' }} Uhr
+          </div>
+        </div>
+      </div>
+    }
+  </div>
+}
+
 @if (loading()) {
   <div class="card"><div class="skeleton" style="height: 320px"></div></div>
 } @else if (players().length === 0) {
@@ -45,6 +86,10 @@
           <th>Gewinn/Verlust</th>
           <th>Verlauf (21 Tage)</th>
           <th class="sortable" (click)="setSort('change')">Tendenz</th>
+          @if (forecast()) {
+            <th title="Erwartete MW-Änderung beim nächsten 22-Uhr-Update">Prognose Update</th>
+            <th title="Erwartete MW-Änderung bis zum Anpfiff des nächsten Spieltags">Marge bis ST</th>
+          }
           <th class="sortable" (click)="setSort('totalPoints')">Punkte</th>
           <th>Aufstellung</th>
           <th class="sortable" (click)="setSort('sellScore')">Verkaufs-Score</th>
@@ -84,6 +129,27 @@
                 <span class="empty-state">–</span>
               }
             </td>
+            @if (forecast()) {
+              @let playerForecast = forecastByPlayerId().get(player.id);
+              <td>
+                @if (playerForecast && playerForecast.latestChange !== null) {
+                  <span [class]="playerForecast.predictedNextChange >= 0 ? 'positive' : 'negative'">
+                    {{ playerForecast.predictedNextChange | signedNumber }} €
+                  </span>
+                } @else {
+                  <span class="empty-state">–</span>
+                }
+              </td>
+              <td>
+                @if (playerForecast && playerForecast.latestChange !== null && playerForecast.predictedChangeUntilKickoff !== null) {
+                  <span [class]="playerForecast.predictedChangeUntilKickoff >= 0 ? 'positive' : 'negative'">
+                    {{ playerForecast.predictedChangeUntilKickoff | signedNumber }} €
+                  </span>
+                } @else {
+                  <span class="empty-state">–</span>
+                }
+              </td>
+            }
             <td>{{ player.totalPoints }}</td>
             <td>
               <span class="badge" [class]="lineupBadgeClass(player.latestLineupStatus)">

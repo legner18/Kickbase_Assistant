@@ -35,6 +35,7 @@ public class LeagueAnalysisJob(
 {
     private const int OverpayLookbackDays = 30;
     private const int MarketValueTimeframeDays = 92;
+    private const int AssignedValueTimeframeDays = 365;
 
     public async Task Execute(IJobExecutionContext context)
     {
@@ -80,6 +81,9 @@ public class LeagueAnalysisJob(
                 await ProcessManagerAsync(league, user, transfers, startingBudget, ranking.CurrentMatchday, ct);
                 managersProcessed++;
             }
+
+            await RecordAssignedValuesAsync(league, myTransfers, ct);
+            await RecordMatchdayResultsAsync(league, ranking.CurrentMatchday, ct);
         }
 
         await dbContext.SaveChangesAsync(ct);
@@ -118,7 +122,8 @@ public class LeagueAnalysisJob(
             var isRecentBuy = transfer.IsBuy && transfer.OccurredAt >= DateTimeOffset.UtcNow.AddDays(-OverpayLookbackDays);
             if (isRecentBuy && marketValueAtTransfer is null)
             {
-                marketValueAtTransfer = await TryLookupMarketValueAsync(league.CompetitionId, transfer, ct);
+                marketValueAtTransfer = await TryLookupMarketValueAsync(
+                    league.CompetitionId, transfer.PlayerId, transfer.OccurredAt, MarketValueTimeframeDays, ct);
                 if (marketValueAtTransfer is > 0)
                 {
                     overpayPercent = (transfer.Price - marketValueAtTransfer.Value) / marketValueAtTransfer.Value * 100;
@@ -180,24 +185,127 @@ public class LeagueAnalysisJob(
         stat.UpdatedAt = DateTimeOffset.UtcNow;
     }
 
+    private async Task RecordAssignedValuesAsync(
+        League league, KickbaseManagerTransfersResponseDto myTransfers, CancellationToken ct)
+    {
+        if (myTransfers.Transfers.Count == 0)
+        {
+            return;
+        }
+
+        var ledgerTransfers = myTransfers.Transfers
+            .Select(transfer => new LedgerTransfer(
+                transfer.PlayerId,
+                transfer.PlayerName,
+                transfer.IsBuy ? TransferType.Buy : TransferType.Sell,
+                transfer.Price,
+                transfer.OccurredAt))
+            .ToList();
+
+        var squadPlayerIds = await dbContext.SquadMemberships
+            .Where(membership => membership.LeagueId == league.Id && membership.ManagerId == league.OwnUserId)
+            .Select(membership => membership.PlayerId)
+            .ToListAsync(ct);
+
+        var knownPlayerIds = await dbContext.AssignedPlayerValues
+            .Where(assigned => assigned.LeagueId == league.Id && assigned.ManagerId == league.OwnUserId)
+            .Select(assigned => assigned.PlayerId)
+            .ToListAsync(ct);
+
+        var missingPlayerIds = TransferLedger.FindAssignedPlayerIds(ledgerTransfers, squadPlayerIds).Except(knownPlayerIds);
+        var assignedAt = myTransfers.Transfers.Min(transfer => transfer.OccurredAt);
+
+        foreach (var playerId in missingPlayerIds)
+        {
+            var marketValue = await TryLookupMarketValueAsync(
+                league.CompetitionId, playerId, assignedAt, AssignedValueTimeframeDays, ct);
+            if (marketValue is not > 0)
+            {
+                continue;
+            }
+
+            dbContext.AssignedPlayerValues.Add(new AssignedPlayerValue
+            {
+                LeagueId = league.Id,
+                ManagerId = league.OwnUserId,
+                PlayerId = playerId,
+                AssignedAt = assignedAt,
+                MarketValue = marketValue.Value,
+            });
+        }
+    }
+
+    private async Task RecordMatchdayResultsAsync(League league, int currentMatchday, CancellationToken ct)
+    {
+        if (currentMatchday <= 0)
+        {
+            return;
+        }
+
+        var existing = await dbContext.ManagerMatchdayResults
+            .Where(result => result.LeagueId == league.Id)
+            .ToListAsync(ct);
+        var knownMatchdays = existing.Select(result => result.MatchdayNumber).ToHashSet();
+        var existingByKey = existing.ToDictionary(result => (result.ManagerId, result.MatchdayNumber));
+
+        var matchdaysToLoad = Enumerable.Range(1, currentMatchday)
+            .Where(matchday => matchday >= currentMatchday - 1 || !knownMatchdays.Contains(matchday));
+
+        foreach (var matchday in matchdaysToLoad)
+        {
+            KickbaseManagerTeamCenterDto teamCenter;
+            try
+            {
+                teamCenter = await kickbaseApiClient.GetManagerTeamCenterAsync(league.Id, league.OwnUserId, matchday, ct);
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "Liga-Analyse: Spieltag {Matchday} für {LeagueName} konnte nicht geladen werden.", matchday, league.Name);
+                continue;
+            }
+
+            foreach (var user in teamCenter.Users)
+            {
+                if (!existingByKey.TryGetValue((user.Id, matchday), out var result))
+                {
+                    result = new ManagerMatchdayResult
+                    {
+                        LeagueId = league.Id,
+                        ManagerId = user.Id,
+                        ManagerName = user.Name,
+                        MatchdayNumber = matchday,
+                    };
+                    dbContext.ManagerMatchdayResults.Add(result);
+                    existingByKey[(user.Id, matchday)] = result;
+                }
+
+                result.ManagerName = user.Name;
+                result.Points = user.MatchdayPoints;
+                result.PointsCounted = user.PointsCounted ?? true;
+                result.MatchdayRank = user.MatchdayRank;
+                result.UpdatedAt = DateTimeOffset.UtcNow;
+            }
+        }
+    }
+
     private async Task<double?> TryLookupMarketValueAsync(
-        string competitionId, KickbaseManagerTransferDto transfer, CancellationToken ct)
+        string competitionId, string playerId, DateTimeOffset occurredAt, int timeframeDays, CancellationToken ct)
     {
         try
         {
             var history = await kickbaseApiClient.GetMarketValueHistoryAsync(
-                competitionId, transfer.PlayerId, MarketValueTimeframeDays, ct);
+                competitionId, playerId, timeframeDays, ct);
             if (history.Count == 0)
             {
                 return null;
             }
 
-            var targetDayIndex = (transfer.OccurredAt.UtcDateTime - DateTime.UnixEpoch).TotalDays;
-            return history.OrderBy(p => Math.Abs(p.DayIndex - targetDayIndex)).First().MarketValue;
+            var targetDayIndex = (occurredAt.UtcDateTime - DateTime.UnixEpoch).TotalDays;
+            return history.OrderBy(point => Math.Abs(point.DayIndex - targetDayIndex)).First().MarketValue;
         }
         catch (Exception ex)
         {
-            logger.LogWarning(ex, "Marktwert-Lookup für Spieler {PlayerId} fehlgeschlagen.", transfer.PlayerId);
+            logger.LogWarning(ex, "Marktwert-Lookup für Spieler {PlayerId} fehlgeschlagen.", playerId);
             return null;
         }
     }

@@ -2,6 +2,7 @@ using KickbaseAssistant.Infrastructure.Data;
 using KickbaseAssistant.Infrastructure.Kickbase;
 using KickbaseAssistant.Infrastructure.Leagues;
 using KickbaseAssistant.Infrastructure.LigaInsider;
+using KickbaseAssistant.Infrastructure.Odds;
 using KickbaseAssistant.Infrastructure.Players;
 using KickbaseAssistant.Infrastructure.Notifications;
 using KickbaseAssistant.Infrastructure.Realtime;
@@ -81,6 +82,15 @@ public static class DependencyInjection
         return services;
     }
 
+    public static IServiceCollection AddKickbaseAssistantOdds(
+        this IServiceCollection services, IConfiguration configuration)
+    {
+        services.Configure<OddsOptions>(configuration.GetSection(OddsOptions.SectionName));
+        services.AddHttpClient<OddsApiClient>();
+
+        return services;
+    }
+
     /// <summary>
     /// Registers the Worker's SignalR client to the Api's live hub (Phase 6). Only the Worker
     /// uses this - the Api hosts the hub instead (see KickbaseAssistant.Api/Realtime/LiveHub.cs).
@@ -92,6 +102,7 @@ public static class DependencyInjection
         services.AddSingleton<LiveHubClient>();
         services.AddSingleton<LiveMarketStateCache>();
         services.AddSingleton<LiveMatchStateCache>();
+        services.AddScoped<LiveNotificationService>();
 
         return services;
     }

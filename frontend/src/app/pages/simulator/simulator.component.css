@@ -1,0 +1,98 @@
+.hint {
+  margin: 0.15rem 0 0;
+  max-width: 70ch;
+}
+
+.card-grid .stat {
+  font-size: 1.35rem;
+}
+
+.verdict {
+  border-left: 4px solid var(--status-good);
+}
+
+.verdict-bad {
+  border-left-color: var(--status-critical);
+}
+
+.verdict p {
+  margin: 0;
+}
+
+.verdict p + p {
+  margin-top: 0.4rem;
+}
+
+.two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+}
+
+.ledger-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.45rem 0;
+  border-bottom: 1px solid var(--gridline);
+  font-size: 0.9rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.ledger-total {
+  border-bottom: none;
+  font-weight: 700;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 0.9rem;
+  font-size: 0.85rem;
+}
+
+.field-hint {
+  margin: -0.4rem 0 0.9rem;
+}
+
+input[type='number'] {
+  font: inherit;
+  border: 1px solid var(--border);
+  background: var(--surface-card);
+  color: var(--text-primary);
+  border-radius: var(--radius-sm);
+  padding: 0.4rem 0.7rem;
+  max-width: 14rem;
+}
+
+.bid-input {
+  width: 9.5rem;
+}
+
+.table-title {
+  padding: 1.1rem 1.3rem 0;
+}
+
+.player-name-cell {
+  cursor: pointer;
+}
+
+.player-name-cell:hover {
+  text-decoration: underline;
+}
+
+.player-name-cell .badge {
+  margin-left: 0.4rem;
+}
+
+.row-selected {
+  background: color-mix(in srgb, var(--primary) 8%, transparent);
+}
+
+@media (max-width: 700px) {
+  .two-col {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+}

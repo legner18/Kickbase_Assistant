@@ -13,7 +13,8 @@ namespace KickbaseAssistant.Infrastructure.Realtime;
 public class LiveHubClient(IOptions<LiveHubOptions> options, ILogger<LiveHubClient> logger) : IAsyncDisposable
 {
     private readonly HubConnection _connection = new HubConnectionBuilder()
-        .WithUrl(options.Value.Url)
+        .WithUrl(options.Value.Url, connectionOptions =>
+            connectionOptions.Headers[LiveHubOptions.PublishKeyHeader] = options.Value.PublishKey)
         .WithAutomaticReconnect()
         .Build();
 
@@ -65,6 +66,23 @@ public class LiveHubClient(IOptions<LiveHubOptions> options, ILogger<LiveHubClie
         catch (Exception ex)
         {
             logger.LogWarning(ex, "SignalR-Live-Spiele-Publish an die Api fehlgeschlagen (CompetitionId={CompetitionId}).", competitionId);
+        }
+    }
+
+    public async Task PublishLiveStatusAsync(LiveWorkerStatus status, CancellationToken ct)
+    {
+        try
+        {
+            if (_connection.State == HubConnectionState.Disconnected)
+            {
+                await _connection.StartAsync(ct);
+            }
+
+            await _connection.InvokeAsync("PublishLiveStatus", status, ct);
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "SignalR-Live-Status-Publish an die Api fehlgeschlagen.");
         }
     }
 

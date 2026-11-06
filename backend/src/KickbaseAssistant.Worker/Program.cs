@@ -8,6 +8,7 @@ builder.Services.AddKickbaseAssistantDatabase(builder.Configuration);
 builder.Services.AddKickbaseAssistantKickbaseClient(builder.Configuration);
 builder.Services.AddKickbaseAssistantLigaInsider(builder.Configuration);
 builder.Services.AddKickbaseAssistantRealtime(builder.Configuration);
+builder.Services.AddKickbaseAssistantOdds(builder.Configuration);
 
 builder.Services.AddQuartz(q =>
 {
@@ -62,9 +63,9 @@ builder.Services.AddQuartz(q =>
     q.AddTrigger(t => t
         .ForJob(liveMatchJobKey)
         .WithIdentity($"{nameof(LiveMatchJob)}-trigger")
-        // Alle 30s - Kickbase-Aufrufe gibt es nur für Spiele, die gerade laufen, und Timelines für
-        // jeden Spieler, dessen Live-Punkte der zuletzt geladenen Timeline voraus sind.
-        .WithSimpleSchedule(s => s.WithIntervalInSeconds(30).RepeatForever())
+        // Alle 5s die Punkte laufender Spiele (2 Teamcenter-Aufrufe pro Spiel); Spielplan, Ranking,
+        // Aufstellungen und Timelines nur bei jedem sechsten Lauf (alle 30s), siehe LiveMatchJob.
+        .WithSimpleSchedule(s => s.WithIntervalInSeconds(5).RepeatForever())
         .StartNow());
 
     var transferMarketScanJobKey = new JobKey(nameof(TransferMarketScanJob));
@@ -96,6 +97,31 @@ builder.Services.AddQuartz(q =>
         // Einmal täglich, kurz nach dem eigenen Marktwert-Snapshot - Kader von Mitspielern
         // ändern sich nicht sekündlich, tägliche Sichtbarkeit reicht.
         .WithCronSchedule("0 55 22 * * ?", x => x.InTimeZone(germanyTimeZone)));
+
+    var bundesligaMarketValueJobKey = new JobKey(nameof(BundesligaMarketValueJob));
+    q.AddJob<BundesligaMarketValueJob>(options => options.WithIdentity(bundesligaMarketValueJobKey));
+    q.AddTrigger(trigger => trigger
+        .ForJob(bundesligaMarketValueJobKey)
+        .WithIdentity($"{nameof(BundesligaMarketValueJob)}-trigger")
+        // Nach Snapshot-Fenster und Liga-Kader-Sync (22:55), damit beide Schreiber derselben
+        // Player-Zeilen nicht gleichzeitig laufen; ein Aufruf je Bundesliga-Verein.
+        .WithCronSchedule("0 5 23 * * ?", schedule => schedule.InTimeZone(germanyTimeZone)));
+
+    var bettingOddsJobKey = new JobKey(nameof(BettingOddsJob));
+    q.AddJob<BettingOddsJob>(options => options.WithIdentity(bettingOddsJobKey));
+    q.AddTrigger(trigger => trigger
+        .ForJob(bettingOddsJobKey)
+        .WithIdentity($"{nameof(BettingOddsJob)}-trigger")
+        // Zweimal täglich, ein Abruf kostet 1 von 500 freien Credits im Monat; ohne Odds:ApiKey ein No-op.
+        .WithCronSchedule("0 0 9,17 * * ?", schedule => schedule.InTimeZone(germanyTimeZone)));
+
+    var matchPointsBackfillJobKey = new JobKey(nameof(MatchPointsBackfillJob));
+    q.AddJob<MatchPointsBackfillJob>(options => options.WithIdentity(matchPointsBackfillJobKey));
+    q.AddTrigger(trigger => trigger
+        .ForJob(matchPointsBackfillJobKey)
+        .WithIdentity($"{nameof(MatchPointsBackfillJob)}-trigger")
+        // Alle 10 Minuten höchstens 3 ältere Spiele (6 Aufrufe), damit der Nachholbedarf langsam abgebaut wird.
+        .WithCronSchedule("0 3/10 * * * ?", schedule => schedule.InTimeZone(germanyTimeZone)));
 
     var dailySummaryJobKey = new JobKey(nameof(DailySummaryJob));
     q.AddJob<DailySummaryJob>(opts => opts.WithIdentity(dailySummaryJobKey));

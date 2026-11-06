@@ -10,6 +10,7 @@ import {
   POSITION_LABELS,
   PlayerDetail,
 } from '../../core/models';
+import { OutcomeBarComponent } from '../../shared/outcome-bar/outcome-bar.component';
 import { ValueChartComponent } from '../../shared/value-chart/value-chart.component';
 
 const SIGNAL_LABELS: Record<string, string> = {
@@ -21,7 +22,7 @@ const SIGNAL_LABELS: Record<string, string> = {
 
 @Component({
   selector: 'app-player-detail',
-  imports: [DecimalPipe, DatePipe, RouterLink, ValueChartComponent],
+  imports: [DecimalPipe, DatePipe, RouterLink, ValueChartComponent, OutcomeBarComponent],
   templateUrl: './player-detail.component.html',
   styleUrl: './player-detail.component.css',
 })

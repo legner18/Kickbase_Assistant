@@ -1,0 +1,259 @@
+<div class="card-header page-header">
+  <div>
+    <h1>Simulator</h1>
+    <p class="hint">
+      Rechnet Verkäufe und Käufe durch, bevor du sie in Kickbase machst. Hier wird nichts verkauft und nichts geboten.
+    </p>
+  </div>
+  <div class="toolbar">
+    <button type="button" (click)="onResetClick()" [disabled]="!hasPlannedChanges()">Zurücksetzen</button>
+    <button class="icon-btn" (click)="onRefreshClick()" title="Aktualisieren">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 12a9 9 0 1 1-2.6-6.4" /><path d="M21 4v5h-5" />
+      </svg>
+    </button>
+  </div>
+</div>
+
+@if (loading()) {
+  <div class="card"><div class="skeleton" style="height: 320px"></div></div>
+} @else if (!data()) {
+  <p class="empty-state">Noch keine Kontostand-Daten für diese Liga. Der Kontostand-Wächter läuft stündlich.</p>
+} @else {
+  @let simulation = data()!;
+  <div class="card-grid">
+    <div class="card">
+      <div class="stat-label">Kontostand</div>
+      <div class="stat" [class.negative]="balanceAfter() < 0" [class.positive]="balanceAfter() >= 0 && balanceNow() < 0">
+        {{ balanceAfter() | number: '1.0-0' : 'de' }} €
+      </div>
+      <div class="stat-sub">jetzt {{ balanceNow() | number: '1.0-0' : 'de' }} €</div>
+    </div>
+    <div class="card">
+      <div class="stat-label">Teamwert</div>
+      <div class="stat">{{ teamValueAfter() | number: '1.0-0' : 'de' }} €</div>
+      <div class="stat-sub">jetzt {{ teamValueNow() | number: '1.0-0' : 'de' }} € · {{ squadSizeAfter() }} Spieler</div>
+    </div>
+    <div class="card">
+      <div class="stat-label">Verfügbar zum Investieren</div>
+      <div class="stat" [class.negative]="availableAfter() < 0">{{ availableAfter() | number: '1.0-0' : 'de' }} €</div>
+      <div class="stat-sub">jetzt {{ availableNow() | number: '1.0-0' : 'de' }} € · Kontostand + 33 % Kreditrahmen</div>
+    </div>
+    <div class="card">
+      <div class="stat-label">Tagestrend Kader</div>
+      <div class="stat" [class.positive]="dailyTrendAfter() > 0" [class.negative]="dailyTrendAfter() < 0">
+        {{ dailyTrendAfter() | signedNumber }} €
+      </div>
+      <div class="stat-sub">jetzt {{ dailyTrendNow() | signedNumber }} €</div>
+    </div>
+    <div class="card">
+      <div class="stat-label">Prognose nächstes Update</div>
+      <div class="stat" [class.positive]="predictedNextAfter() > 0" [class.negative]="predictedNextAfter() < 0">
+        {{ predictedNextAfter() | signedNumber }} €
+      </div>
+      <div class="stat-sub">jetzt {{ predictedNextNow() | signedNumber }} € · gekaufte Spieler ohne Prognose</div>
+    </div>
+  </div>
+
+  <div class="card verdict" [class.verdict-bad]="balanceAfter() < 0 || rosterGapsAfter().length > 0">
+    @if (balanceAfter() < 0) {
+      <p>
+        ⚠️ Kontostand zum Anpfiff von Spieltag {{ simulation.nextMatchdayNumber }}
+        ({{ simulation.nextKickoffAt | date: 'dd.MM. HH:mm' }} Uhr) im Minus. Dann gibt es 0 Punkte.
+      </p>
+    } @else {
+      <p>✅ Kontostand zum Anpfiff von Spieltag {{ simulation.nextMatchdayNumber }} im Plus.</p>
+    }
+    @if (rosterGapsAfter().length > 0) {
+      <p>⚠️ Mindestbesetzung nicht erfüllt: {{ rosterGapsAfter().join(', ') }}</p>
+    }
+  </div>
+
+  <div class="two-col">
+    <div class="card">
+      <div class="card-header"><h2>Rechnung</h2></div>
+      <div class="ledger-row">
+        <span>Kontostand jetzt</span>
+        <span>{{ balanceNow() | number: '1.0-0' : 'de' }} €</span>
+      </div>
+      <div class="ledger-row">
+        <span>+ Verkäufe ({{ soldPlayers().length }})</span>
+        <span>{{ salesTotal() | number: '1.0-0' : 'de' }} €</span>
+      </div>
+      <div class="ledger-row">
+        <span>− Käufe ({{ purchasedPlayers().length }})</span>
+        <span>{{ purchasesTotal() | number: '1.0-0' : 'de' }} €</span>
+      </div>
+      <div class="ledger-row">
+        <span>+ Login-Bonus</span>
+        <span>{{ loginBonusTotal() | number: '1.0-0' : 'de' }} €</span>
+      </div>
+      <div class="ledger-row">
+        <span>+ Erfolgsprämie</span>
+        <span>{{ successBonus() | number: '1.0-0' : 'de' }} €</span>
+      </div>
+      <div class="ledger-row ledger-total">
+        <span>Neuer Kontostand</span>
+        <span [class]="balanceAfter() >= 0 ? 'positive' : 'negative'">{{ balanceAfter() | number: '1.0-0' : 'de' }} €</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><h2>Bonus &amp; Prämien</h2></div>
+      <label class="field">
+        <span>Login-Bonus dazurechnen</span>
+        <select (change)="onLoginBonusChange($event)">
+          @for (dayCount of loginBonusOptions(); track dayCount) {
+            <option [value]="dayCount" [selected]="dayCount === loginBonusDays()">
+              {{ dayCount === 0 ? 'kein Login-Bonus' : dayCount + (dayCount === 1 ? ' Tag' : ' Tage') + ' (+' + (dayCount * simulation.loginBonusPerDay | number: '1.0-0' : 'de') + ' €)' }}
+            </option>
+          }
+        </select>
+      </label>
+      <p class="hint field-hint">
+        Bis zum Anpfiff am {{ simulation.nextKickoffAt | date: 'dd.MM. HH:mm' }} Uhr sind noch {{ simulation.loginBonusDays }}
+        {{ simulation.loginBonusDays === 1 ? 'Tag' : 'Tage' }} mit Login-Bonus möglich.
+      </p>
+      <label class="field">
+        <span>Erfolgsprämie (€)</span>
+        <input type="number" min="0" step="100000" [value]="successBonus()" (input)="onSuccessBonusInput($event)" />
+      </label>
+    </div>
+  </div>
+
+  <div class="card card-table">
+    <div class="card-header table-title">
+      <h2>Kader</h2>
+      <span class="muted">{{ simulation.updatesUntilKickoff }} MW-{{ simulation.updatesUntilKickoff === 1 ? 'Update' : 'Updates' }} bis Anpfiff</span>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>Verkaufen</th>
+          <th class="sticky-col">Spieler</th>
+          <th>Pos</th>
+          <th>Marktwert</th>
+          <th>Kaufpreis</th>
+          <th>Bilanz bei Verkauf</th>
+          <th>Tendenz</th>
+          <th>Prognose Update</th>
+          <th>Marge bis ST</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (squadPlayer of simulation.squad; track squadPlayer.playerId) {
+          <tr [class.row-selected]="plannedSales().has(squadPlayer.playerId)">
+            <td>
+              <input type="checkbox" [checked]="plannedSales().has(squadPlayer.playerId)" (change)="onSaleChange(squadPlayer)" />
+            </td>
+            <td class="sticky-col player-name-cell" (click)="onPlayerClick(squadPlayer.playerId)">{{ squadPlayer.playerName }}</td>
+            <td>{{ positionLabels[squadPlayer.position] ?? '–' }}</td>
+            <td>{{ squadPlayer.marketValue | number: '1.0-0' : 'de' }} €</td>
+            <td>
+              @if (squadPlayer.purchasePrice !== null) {
+                {{ squadPlayer.purchasePrice | number: '1.0-0' : 'de' }} €
+              } @else {
+                <span class="muted">–</span>
+              }
+            </td>
+            <td>
+              @if (squadPlayer.purchasePrice !== null) {
+                <span [class]="squadPlayer.marketValue - squadPlayer.purchasePrice >= 0 ? 'positive' : 'negative'">
+                  {{ squadPlayer.marketValue - squadPlayer.purchasePrice | signedNumber }} €
+                </span>
+              } @else {
+                <span class="muted">–</span>
+              }
+            </td>
+            <td>
+              @if (squadPlayer.latestChange !== null) {
+                <span [class]="squadPlayer.latestChange >= 0 ? 'positive' : 'negative'">{{ squadPlayer.latestChange | signedNumber }} €</span>
+              } @else {
+                <span class="muted">–</span>
+              }
+            </td>
+            <td>
+              @if (squadPlayer.latestChange !== null) {
+                <span [class]="squadPlayer.predictedNextChange >= 0 ? 'positive' : 'negative'">
+                  {{ squadPlayer.predictedNextChange | signedNumber }} €
+                </span>
+              } @else {
+                <span class="muted">–</span>
+              }
+            </td>
+            <td>
+              @if (squadPlayer.latestChange !== null) {
+                <span [class]="squadPlayer.predictedChangeUntilKickoff >= 0 ? 'positive' : 'negative'">
+                  {{ squadPlayer.predictedChangeUntilKickoff | signedNumber }} €
+                </span>
+              } @else {
+                <span class="muted">–</span>
+              }
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card card-table">
+    <div class="card-header table-title">
+      <h2>Transfermarkt</h2>
+      <span class="muted">Deine offenen Gebote sind vorausgewählt</span>
+    </div>
+    @if (simulation.market.length === 0) {
+      <p class="empty-state">Aktuell keine Spieler auf dem Markt.</p>
+    } @else {
+      <table>
+        <thead>
+          <tr>
+            <th>Kaufen</th>
+            <th class="sticky-col">Spieler</th>
+            <th>Pos</th>
+            <th>Team</th>
+            <th>Besitzer</th>
+            <th>Marktwert</th>
+            <th>Preis</th>
+            <th>Gebot</th>
+            <th>Läuft ab</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (listing of simulation.market; track listing.playerId) {
+            <tr [class.row-selected]="plannedPurchases().has(listing.playerId)">
+              <td>
+                <input type="checkbox" [checked]="plannedPurchases().has(listing.playerId)" (change)="onPurchaseChange(listing)" />
+              </td>
+              <td class="sticky-col player-name-cell" (click)="onPlayerClick(listing.playerId)">
+                {{ listing.playerName }}
+                @if (listing.ownOfferPrice !== null) {
+                  <span class="badge badge-good">dein Gebot</span>
+                }
+              </td>
+              <td>{{ positionLabels[listing.position] ?? '–' }}</td>
+              <td>{{ listing.teamName ?? '–' }}</td>
+              <td>{{ listing.ownerManagerName ?? 'Kickbase' }}</td>
+              <td>{{ listing.marketValue | number: '1.0-0' : 'de' }} €</td>
+              <td>{{ listing.price | number: '1.0-0' : 'de' }} €</td>
+              <td>
+                @if (plannedPurchases().has(listing.playerId)) {
+                  <input
+                    class="bid-input"
+                    type="number"
+                    min="0"
+                    step="10000"
+                    [value]="plannedBid(listing.playerId)"
+                    (input)="onBidInput(listing, $event)"
+                  />
+                } @else {
+                  <span class="muted">–</span>
+                }
+              </td>
+              <td>{{ listing.expiresAt | date: 'dd.MM. HH:mm' }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+  </div>
+}

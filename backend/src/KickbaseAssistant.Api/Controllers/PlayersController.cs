@@ -234,22 +234,7 @@ public class PlayersController(AppDbContext dbContext, PlayerMetricsService play
 
         // Umbauplan "MW-Prognose 22 Uhr": gewichteter Trend der letzten 5 Tage, siehe
         // MarketValuePredictor - bewusst kein ML, nur ein einfaches, erklärbares Modell.
-        var recentSnapshots = await dbContext.MarketValueSnapshots
-            .Where(s => s.PlayerId == id)
-            .OrderByDescending(s => s.Date)
-            .Take(5)
-            .Select(s => new { s.MarketValue, s.MarketValueChange })
-            .ToListAsync(ct);
-        var recentPercentChanges = recentSnapshots
-            .AsEnumerable()
-            .Reverse()
-            .Select(s =>
-            {
-                var previousValue = s.MarketValue - s.MarketValueChange;
-                return previousValue > 0 ? s.MarketValueChange / (double)previousValue * 100 : 0;
-            })
-            .ToList();
-        var predictedChangePercent = MarketValuePredictor.PredictNextChangePercent(recentPercentChanges);
+        var predictedChangePercent = await playerMetricsService.ComputePredictedChangePercentAsync(player.Id, ct);
         var predictedNextValue = MarketValuePredictor.PredictNextValue(player.MarketValue, predictedChangePercent);
 
         var marketListingHistory = await dbContext.MarketListingHistories
@@ -290,6 +275,17 @@ public class PlayersController(AppDbContext dbContext, PlayerMetricsService play
             })
             .ToList();
 
+        var competitionKey = player.CompetitionId.ToString();
+        var nextMatch = await dbContext.LiveMatches
+            .Where(match => match.CompetitionId == competitionKey
+                && (match.HomeTeamId == player.TeamId || match.AwayTeamId == player.TeamId)
+                && match.Status != LiveMatchStatus.Finished)
+            .OrderBy(match => match.KickoffAt)
+            .FirstOrDefaultAsync(ct);
+        var nextMatchOdds = nextMatch is null
+            ? null
+            : await dbContext.MatchOdds.FirstOrDefaultAsync(odds => odds.MatchId == nextMatch.Id, ct);
+
         return Ok(new
         {
             id = player.Id,
@@ -302,6 +298,17 @@ public class PlayersController(AppDbContext dbContext, PlayerMetricsService play
             averagePoints = player.AveragePoints,
             statusCode = player.StatusCode,
             lastSeenAt = player.LastSeenAt,
+            nextMatch = nextMatch is null
+                ? null
+                : new
+                {
+                    matchdayNumber = nextMatch.MatchdayNumber,
+                    kickoffAt = nextMatch.KickoffAt,
+                    isHome = nextMatch.HomeTeamId == player.TeamId,
+                    opponentTeamName = nextMatch.HomeTeamId == player.TeamId ? nextMatch.AwayTeamName : nextMatch.HomeTeamName,
+                    opponentTeamSymbol = nextMatch.HomeTeamId == player.TeamId ? nextMatch.AwayTeamSymbol : nextMatch.HomeTeamSymbol,
+                    odds = nextMatchOdds is null ? null : MatchdayController.MapOdds(nextMatchOdds),
+                },
             fairValue,
             fairValueDeltaPercent = player.MarketValue > 0 ? (fairValue - player.MarketValue) / player.MarketValue * 100 : 0,
             pointsPerMillion = player.MarketValue > 0 ? player.AveragePoints / (player.MarketValue / 1_000_000.0) : 0,

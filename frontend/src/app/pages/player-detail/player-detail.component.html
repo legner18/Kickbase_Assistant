@@ -87,6 +87,36 @@
     <app-value-chart [points]="history()" />
   </div>
 
+  @if (p.nextMatch; as nextMatch) {
+    <div class="card">
+      <div class="card-header">
+        <h2>Nächstes Spiel</h2>
+        <span class="muted">ST {{ nextMatch.matchdayNumber }} · {{ nextMatch.kickoffAt | date: 'EEE dd.MM. HH:mm' : undefined : 'de' }} Uhr</span>
+      </div>
+      <p class="next-match-title">
+        {{ nextMatch.isHome ? 'Heim' : 'Auswärts' }} gegen {{ nextMatch.opponentTeamName ?? nextMatch.opponentTeamSymbol ?? '–' }}
+      </p>
+      @if (nextMatch.odds; as odds) {
+        <app-outcome-bar
+          [homeProbability]="nextMatch.isHome ? odds.homeWinProbability : odds.awayWinProbability"
+          [drawProbability]="odds.drawProbability"
+          [awayProbability]="nextMatch.isHome ? odds.awayWinProbability : odds.homeWinProbability"
+          [homeLabel]="'Sieg ' + (p.teamName ?? '')"
+          [awayLabel]="'Niederlage'"
+        />
+        <p class="hint next-match-odds">
+          Quote {{ (nextMatch.isHome ? odds.homeOdds : odds.awayOdds) | number: '1.2-2' : 'de' }} |
+          {{ odds.drawOdds | number: '1.2-2' : 'de' }} |
+          {{ (nextMatch.isHome ? odds.awayOdds : odds.homeOdds) | number: '1.2-2' : 'de' }}
+          · erwartete Tore {{ (nextMatch.isHome ? odds.expectedHomeGoals : odds.expectedAwayGoals) | number: '1.1-1' : 'de' }} :
+          {{ (nextMatch.isHome ? odds.expectedAwayGoals : odds.expectedHomeGoals) | number: '1.1-1' : 'de' }}
+        </p>
+      } @else {
+        <p class="hint next-match-odds">Für dieses Spiel liegen noch keine Wettquoten vor.</p>
+      }
+    </div>
+  }
+
   @if (p.upcomingFixtures.length > 0) {
     <div class="card">
       <div class="card-header"><h2>Restprogramm</h2></div>

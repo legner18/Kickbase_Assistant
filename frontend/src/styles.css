@@ -476,6 +476,77 @@ select {
   background: color-mix(in srgb, var(--status-good) 8%, transparent);
 }
 
+.points-flash-up {
+  animation: points-flash-up 3s ease-out;
+}
+
+.points-flash-down {
+  animation: points-flash-down 3s ease-out;
+}
+
+.points-delta {
+  display: inline-block;
+  margin-left: 0.35rem;
+  padding: 0 0.4rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.5;
+  white-space: nowrap;
+  color: var(--delta-up);
+  background: color-mix(in srgb, var(--status-good) 16%, transparent);
+  animation: points-delta-fade 3s ease-in forwards;
+}
+
+.points-delta-down {
+  color: var(--delta-down);
+  background: color-mix(in srgb, var(--status-critical) 14%, transparent);
+}
+
+.live-panel-total .points-delta {
+  display: inline-block;
+  vertical-align: middle;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--delta-up);
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.live-panel-total .points-delta-down {
+  color: var(--delta-down);
+}
+
+@keyframes points-flash-up {
+  0%,
+  20% {
+    background-color: color-mix(in srgb, var(--status-good) 24%, transparent);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+@keyframes points-flash-down {
+  0%,
+  20% {
+    background-color: color-mix(in srgb, var(--status-critical) 20%, transparent);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+@keyframes points-delta-fade {
+  0%,
+  75% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
 .event-chips {
   display: flex;
   flex-wrap: wrap;

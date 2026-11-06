@@ -1,0 +1,175 @@
+<div class="card-header page-header">
+  <div>
+    <h1>Spieltag</h1>
+    <p class="hint">Begegnungen mit Wettquoten, Kickbase-Punkte je Verein, Restprogramm und MVPs</p>
+  </div>
+  <div class="toolbar">
+    @if (overview(); as data) {
+      @if (data.matchdayNumber !== null) {
+        <button type="button" class="icon-btn" (click)="onPreviousClick()" [disabled]="previousMatchday() === null" title="Vorheriger Spieltag">‹</button>
+        <select (change)="onMatchdayChange($event)" aria-label="Spieltag">
+          @for (matchdayNumber of data.availableMatchdays; track matchdayNumber) {
+            <option [value]="matchdayNumber" [selected]="matchdayNumber === data.matchdayNumber">
+              Spieltag {{ matchdayNumber }}{{ matchdayNumber === data.currentMatchday ? ' (aktuell)' : '' }}
+            </option>
+          }
+        </select>
+        <button type="button" class="icon-btn" (click)="onNextClick()" [disabled]="nextMatchday() === null" title="Nächster Spieltag">›</button>
+      }
+    }
+    <button class="icon-btn" (click)="onRefreshClick()" title="Aktualisieren">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 12a9 9 0 1 1-2.6-6.4" /><path d="M21 4v5h-5" />
+      </svg>
+    </button>
+  </div>
+</div>
+
+@if (loading()) {
+  <div class="card"><div class="skeleton" style="height: 320px"></div></div>
+} @else if (!overview() || overview()!.matchdayNumber === null) {
+  <p class="empty-state">Noch kein Spielplan geladen. Der Live-Job holt ihn alle 6 Stunden.</p>
+} @else {
+  @let data = overview()!;
+
+  @if (!data.hasOdds) {
+    <p class="hint odds-hint">
+      Noch keine Wettquoten. Der Quoten-Job läuft um 9 und 17 Uhr, sobald <code>Odds:ApiKey</code> gesetzt ist.
+    </p>
+  }
+
+  <div class="card">
+    <div class="card-header"><h2>Begegnungen</h2></div>
+    @for (match of data.matches; track match.matchId) {
+      <div class="match-row">
+        <div class="match-time">
+          {{ match.kickoffAt | date: 'EEE dd.MM.' : undefined : 'de' }}
+          <span>{{ match.kickoffAt | date: 'HH:mm' }}</span>
+        </div>
+        <div class="match-main">
+          <div class="match-teams">
+            <span class="team team-home">{{ teamLabel(match.homeTeamName, match.homeTeamSymbol) }}</span>
+            <span class="score" [class.score-live]="match.status === 'Live'">
+              @if (hasResult(match)) {
+                {{ match.homeGoals }} : {{ match.awayGoals }}
+              } @else {
+                –
+              }
+            </span>
+            <span class="team team-away">{{ teamLabel(match.awayTeamName, match.awayTeamSymbol) }}</span>
+          </div>
+          @if (match.status === 'Live') {
+            <div class="match-sub live-badge"><span class="badge badge-critical">Live {{ match.minute ?? '' }}</span></div>
+          }
+          @if (match.homeTeamPoints !== null || match.awayTeamPoints !== null) {
+            <div class="match-sub">
+              Kickbase-Punkte {{ match.homeTeamPoints ?? '–' }} : {{ match.awayTeamPoints ?? '–' }}
+            </div>
+          }
+          @if (match.odds; as odds) {
+            <app-outcome-bar
+              class="match-outcome"
+              [homeProbability]="odds.homeWinProbability"
+              [drawProbability]="odds.drawProbability"
+              [awayProbability]="odds.awayWinProbability"
+              [homeLabel]="match.homeTeamSymbol ?? 'Heim'"
+              [awayLabel]="match.awayTeamSymbol ?? 'Auswärts'"
+            />
+            <div class="match-sub">
+              Quote {{ odds.homeOdds | number: '1.2-2' : 'de' }} | {{ odds.drawOdds | number: '1.2-2' : 'de' }} |
+              {{ odds.awayOdds | number: '1.2-2' : 'de' }} · erwartete Tore {{ odds.expectedHomeGoals | number: '1.1-1' : 'de' }} :
+              {{ odds.expectedAwayGoals | number: '1.1-1' : 'de' }} · {{ odds.bookmakerCount }} Anbieter
+            </div>
+          }
+        </div>
+      </div>
+    }
+  </div>
+
+  <div class="two-col">
+    <div class="card card-table">
+      <div class="card-header table-title"><h2>Punktetabelle</h2></div>
+      @if (data.teamPoints.length === 0) {
+        <p class="empty-state">Noch keine Kickbase-Punkte erfasst.</p>
+      } @else {
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Verein</th>
+              <th>ST {{ data.matchdayNumber }}</th>
+              <th>Saison</th>
+              <th>Ø / Spiel</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (team of data.teamPoints; track team.teamId; let rank = $index) {
+              <tr>
+                <td class="muted">{{ rank + 1 }}</td>
+                <td>{{ teamLabel(team.teamName, team.teamSymbol) }}</td>
+                <td>{{ team.matchdayPoints !== null ? (team.matchdayPoints | number: '1.0-0' : 'de') : '–' }}</td>
+                <td>{{ team.seasonPoints | number: '1.0-0' : 'de' }}</td>
+                <td>{{ team.seasonPoints / team.matchesCounted | number: '1.0-0' : 'de' }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+        <p class="hint table-hint">Spiele vor Spieltag 8 werden nach und nach nachgeladen.</p>
+      }
+    </div>
+
+    <div class="card">
+      <div class="card-header"><h2>MVP-Archiv</h2></div>
+      @for (mvp of data.mvps; track mvp.matchdayNumber) {
+        <div class="mvp-row" (click)="onPlayerClick(mvp.playerId)">
+          <span class="mvp-matchday">ST {{ mvp.matchdayNumber }}</span>
+          <span class="mvp-name">
+            {{ mvp.playerName }}
+            <span class="muted">{{ positionLabels[mvp.position] ?? '' }} · {{ mvp.teamName ?? '' }} · {{ mvp.ownerManagerName ?? 'frei' }}</span>
+          </span>
+          <span class="mvp-points">{{ mvp.points | number: '1.0-0' : 'de' }}</span>
+        </div>
+      } @empty {
+        <p class="empty-state">Noch keine Spielerpunkte erfasst.</p>
+      }
+    </div>
+  </div>
+
+  <div class="card card-table">
+    <div class="card-header table-title">
+      <h2>Restprogramm</h2>
+      <span class="muted">leichtestes Programm zuerst · Prozent = Siegchance laut Quoten</span>
+    </div>
+    @if (data.remainingSchedule.length === 0) {
+      <p class="empty-state">Noch kein Restprogramm berechnet.</p>
+    } @else {
+      <table>
+        <thead>
+          <tr>
+            <th class="sticky-col">Verein</th>
+            <th>Nächste Gegner</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (team of data.remainingSchedule; track team.teamId) {
+            <tr>
+              <td class="sticky-col">{{ teamLabel(team.teamName, team.teamSymbol) }}</td>
+              <td>
+                <div class="fixture-chips">
+                  @for (fixture of team.fixtures; track fixture.matchdayNumber) {
+                    <span class="badge" [class]="difficultyClass(fixture.difficultyTier)" [title]="'Spieltag ' + fixture.matchdayNumber">
+                      {{ fixture.isHome ? 'H' : 'A' }} {{ fixture.opponentSymbol ?? fixture.opponentTeamName ?? fixture.opponentTeamId }}
+                      @if (fixture.winProbability !== null) {
+                        · {{ fixture.winProbability * 100 | number: '1.0-0' : 'de' }} %
+                      }
+                    </span>
+                  }
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+  </div>
+}

@@ -10,6 +10,72 @@
   </button>
 </div>
 
+@if (overview(); as leagueOverview) {
+  @if (leagueOverview.managers.length > 0) {
+    <div class="manager-tiles">
+      @for (manager of leagueOverview.managers; track manager.managerId) {
+        <div class="card manager-tile" [class.manager-tile-me]="manager.isMe">
+          <div class="manager-tile-header">
+            <span class="manager-rank">{{ manager.seasonRank }}.</span>
+            <strong>{{ manager.managerName }}</strong>
+            <span class="manager-points">{{ manager.seasonPoints | number: '1.0-0' : 'de' }} Pkt</span>
+          </div>
+          <dl class="manager-facts">
+            <div>
+              <dt>MW-Änderung heute</dt>
+              <dd>
+                @if (manager.marketValueChangeToday !== null) {
+                  <span [class]="manager.marketValueChangeToday >= 0 ? 'positive' : 'negative'">{{ manager.marketValueChangeToday | signedNumber }} €</span>
+                  @if (manager.marketValueChangeCoverage < manager.squadSize) {
+                    <span class="muted"> ({{ manager.marketValueChangeCoverage }}/{{ manager.squadSize }})</span>
+                  }
+                } @else {
+                  <span class="muted">–</span>
+                }
+              </dd>
+            </div>
+            <div>
+              <dt>Teamwert</dt>
+              <dd>{{ manager.teamValue / 1000000 | number: '1.1-1' : 'de' }} Mio €</dd>
+            </div>
+            <div>
+              <dt>Kader</dt>
+              <dd>{{ manager.squadSize }} Spieler</dd>
+            </div>
+            <div>
+              <dt>Ø Punkte</dt>
+              <dd>{{ manager.averageMatchdayPoints !== null ? (manager.averageMatchdayPoints | number: '1.0-0' : 'de') : '–' }}</dd>
+            </div>
+            <div>
+              <dt>Transfers</dt>
+              <dd>{{ manager.transferCount ?? '–' }}</dd>
+            </div>
+            <div>
+              <dt>Ø Overpay</dt>
+              <dd>{{ manager.averageOverpayPercent !== null ? (manager.averageOverpayPercent | signedNumber: '1.1-1') + ' %' : '–' }}</dd>
+            </div>
+          </dl>
+        </div>
+      }
+    </div>
+  }
+
+  <div class="card">
+    <div class="card-header">
+      <h2>Rangverlauf</h2>
+      <div class="segmented" role="group" aria-label="Darstellung">
+        <button type="button" [class.segmented-active]="rankChartMode() === 'rank'" (click)="onRankChartModeClick('rank')">Platzierung</button>
+        <button type="button" [class.segmented-active]="rankChartMode() === 'points'" (click)="onRankChartModeClick('points')">Gesamtpunkte</button>
+      </div>
+    </div>
+    @if (leagueOverview.matchdays.length > 0) {
+      <app-rank-history-chart [managers]="leagueOverview.managers" [matchdays]="leagueOverview.matchdays" [mode]="rankChartMode()" />
+    } @else {
+      <p class="empty-state">Noch keine Spieltagsdaten. Die Liga-Analyse lädt sie beim nächsten Lauf (alle 30 Minuten) nach.</p>
+    }
+  </div>
+}
+
 <div class="card">
   <div class="card-header">
     <h2>Geschätztes Budget &amp; Gebotsverhalten</h2>

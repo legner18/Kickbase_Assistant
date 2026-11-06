@@ -25,6 +25,7 @@ services:
     environment:
       ConnectionStrings__Default: "Host=postgres;Port=5432;Database=kickbase_assistant;Username=${DB_USER:-kickbase};Password=${DB_PASSWORD}"
       Cors__AllowedOrigins__0: ${FRONTEND_ORIGIN:-http://localhost:4200}
+      LiveHub__PublishKey: ${LIVE_HUB_PUBLISH_KEY:?LIVE_HUB_PUBLISH_KEY must be set in .env}
       ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
     ports:
       - "5080:8080"
@@ -42,7 +43,9 @@ services:
       Kickbase__Email: ${KICKBASE_EMAIL:?KICKBASE_EMAIL must be set in .env}
       Kickbase__Password: ${KICKBASE_PASSWORD:?KICKBASE_PASSWORD must be set in .env}
       Ntfy__Topic: ${NTFY_TOPIC:?NTFY_TOPIC must be set in .env}
+      Odds__ApiKey: ${ODDS_API_KEY:-}
       LiveHub__Url: "http://api:8080/hubs/live"
+      LiveHub__PublishKey: ${LIVE_HUB_PUBLISH_KEY:?LIVE_HUB_PUBLISH_KEY must be set in .env}
       ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
 
 volumes:

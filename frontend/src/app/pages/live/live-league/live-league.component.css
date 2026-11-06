@@ -14,6 +14,11 @@
   font-size: 0.85rem;
 }
 
+.league-updated-stale {
+  color: color-mix(in srgb, var(--status-warning) 70%, var(--text-primary));
+  font-weight: 600;
+}
+
 .manager-name {
   display: inline-flex;
   align-items: center;

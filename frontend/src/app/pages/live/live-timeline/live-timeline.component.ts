@@ -2,7 +2,7 @@ import { DatePipe } from '@angular/common';
 import { Component, computed, effect, inject, input, signal, untracked } from '@angular/core';
 import { ApiService } from '../../../core/api.service';
 import { LeagueContextService } from '../../../core/league-context.service';
-import { LiveHubService } from '../../../core/live-hub.service';
+import { onLiveRefresh } from '../../../core/live-refresh';
 import { LivePlayerTimeline } from '../../../core/models';
 
 const SIGNIFICANT_POINTS = 10;
@@ -19,8 +19,6 @@ export class LiveTimelineComponent {
 
   private readonly api = inject(ApiService);
   private readonly leagueContext = inject(LeagueContextService);
-  private readonly liveHub = inject(LiveHubService);
-  private readonly initialLiveUpdate = this.liveHub.lastLiveMatchesUpdate();
 
   readonly timeline = signal<LivePlayerTimeline | null>(null);
   readonly loading = signal(true);
@@ -54,14 +52,7 @@ export class LiveTimelineComponent {
       untracked(() => this.load(matchId, playerId));
     });
 
-    effect(() => {
-      const update = this.liveHub.lastLiveMatchesUpdate();
-      if (!update || update === this.initialLiveUpdate) {
-        return;
-      }
-
-      untracked(() => this.load(this.matchId(), this.playerId(), true));
-    });
+    onLiveRefresh(() => this.load(this.matchId(), this.playerId(), true));
   }
 
   onShowAllClick(): void {

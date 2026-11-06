@@ -8,7 +8,7 @@ namespace KickbaseAssistant.Domain.Players;
 /// </summary>
 public static class RosterCheck
 {
-    private static readonly (int Position, int MinCount, string Label)[] Requirements =
+    public static readonly IReadOnlyList<(int Position, int MinCount, string Label)> Requirements =
     [
         (1, 1, "Torwart"),
         (2, 3, "Abwehr"),

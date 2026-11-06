@@ -1,19 +1,24 @@
 import { DecimalPipe } from '@angular/common';
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, effect, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
+import { catchError, of } from 'rxjs';
 import { ApiService } from '../../core/api.service';
-import { POSITION_LABELS, ValueRankingEntry } from '../../core/models';
+import { LeagueContextService } from '../../core/league-context.service';
+import { FairValueRadar, POSITION_LABELS, ValueRankingEntry } from '../../core/models';
+import { FairValueRadarComponent } from './fair-value-radar.component';
 
 @Component({
   selector: 'app-value-ranking',
-  imports: [DecimalPipe],
+  imports: [DecimalPipe, FairValueRadarComponent],
   templateUrl: './value-ranking.component.html',
   styleUrl: './value-ranking.component.css',
 })
 export class ValueRankingComponent {
   private readonly api = inject(ApiService);
   private readonly router = inject(Router);
+  private readonly leagueContext = inject(LeagueContextService);
 
+  readonly radar = signal<FairValueRadar | null>(null);
   readonly entries = signal<ValueRankingEntry[]>([]);
   readonly loading = signal(true);
   readonly search = signal('');
@@ -31,6 +36,16 @@ export class ValueRankingComponent {
 
   constructor() {
     this.load();
+    this.leagueContext.ensureLoaded();
+    effect(() => {
+      const leagueId = this.leagueContext.selectedLeagueId();
+      if (leagueId) {
+        this.api
+          .getFairValueRadar(leagueId)
+          .pipe(catchError(() => of(null)))
+          .subscribe((radar) => this.radar.set(radar));
+      }
+    });
   }
 
   load(): void {

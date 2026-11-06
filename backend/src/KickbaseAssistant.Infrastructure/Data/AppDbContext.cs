@@ -28,10 +28,51 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<LiveMatchPlayerEvent> LiveMatchPlayerEvents => Set<LiveMatchPlayerEvent>();
     public DbSet<LiveManagerScore> LiveManagerScores => Set<LiveManagerScore>();
     public DbSet<LiveManagerPlayer> LiveManagerPlayers => Set<LiveManagerPlayer>();
+    public DbSet<AssignedPlayerValue> AssignedPlayerValues => Set<AssignedPlayerValue>();
+    public DbSet<OwnMarketOffer> OwnMarketOffers => Set<OwnMarketOffer>();
+    public DbSet<ManagerMatchdayResult> ManagerMatchdayResults => Set<ManagerMatchdayResult>();
+    public DbSet<MatchOdds> MatchOdds => Set<MatchOdds>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
+
+        builder.Entity<AssignedPlayerValue>(assigned =>
+        {
+            assigned.Property(entity => entity.LeagueId).IsRequired().HasMaxLength(50);
+            assigned.Property(entity => entity.ManagerId).IsRequired().HasMaxLength(50);
+            assigned.Property(entity => entity.PlayerId).IsRequired().HasMaxLength(50);
+
+            assigned.HasIndex(entity => new { entity.LeagueId, entity.ManagerId, entity.PlayerId }).IsUnique();
+        });
+
+        builder.Entity<MatchOdds>(odds =>
+        {
+            odds.Property(entity => entity.MatchId).IsRequired().HasMaxLength(50);
+            odds.Property(entity => entity.CompetitionId).IsRequired().HasMaxLength(50);
+            odds.Property(entity => entity.SourceHomeTeam).IsRequired().HasMaxLength(200);
+            odds.Property(entity => entity.SourceAwayTeam).IsRequired().HasMaxLength(200);
+
+            odds.HasIndex(entity => entity.MatchId).IsUnique();
+        });
+
+        builder.Entity<ManagerMatchdayResult>(result =>
+        {
+            result.Property(entity => entity.LeagueId).IsRequired().HasMaxLength(50);
+            result.Property(entity => entity.ManagerId).IsRequired().HasMaxLength(50);
+            result.Property(entity => entity.ManagerName).IsRequired().HasMaxLength(200);
+
+            result.HasIndex(entity => new { entity.LeagueId, entity.ManagerId, entity.MatchdayNumber }).IsUnique();
+        });
+
+        builder.Entity<OwnMarketOffer>(offer =>
+        {
+            offer.Property(entity => entity.LeagueId).IsRequired().HasMaxLength(50);
+            offer.Property(entity => entity.PlayerId).IsRequired().HasMaxLength(50);
+            offer.Property(entity => entity.PlayerName).IsRequired().HasMaxLength(200);
+
+            offer.HasIndex(entity => new { entity.LeagueId, entity.PlayerId }).IsUnique();
+        });
 
         builder.Entity<Player>(p =>
         {

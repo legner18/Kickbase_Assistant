@@ -3,9 +3,11 @@ import { Component, ElementRef, computed, effect, inject, signal, untracked, vie
 import { RouterLink } from '@angular/router';
 import { ApiService } from '../../../core/api.service';
 import { LeagueContextService } from '../../../core/league-context.service';
-import { LiveHubService } from '../../../core/live-hub.service';
+import { createNowSignal, isLiveDataStale, onLiveRefresh } from '../../../core/live-refresh';
 import { summarizeMatchEvents } from '../../../core/match-events';
 import { LiveMatch, LiveMatchTeam, LiveMatchday, LiveTeamPlayer, LiveTeamPoints, POSITION_LABELS } from '../../../core/models';
+import { createPointsChangeTracker } from '../../../core/points-change-tracker';
+import { SignedNumberPipe } from '../../../shared/signed-number.pipe';
 import { LiveTimelineComponent } from '../live-timeline/live-timeline.component';
 
 interface SelectedTeam {
@@ -13,17 +15,22 @@ interface SelectedTeam {
   teamId: string;
 }
 
+function teamKey(matchId: string, teamId: string): string {
+  return `${matchId}:${teamId}`;
+}
+
 @Component({
   selector: 'app-live-matches',
-  imports: [DatePipe, DecimalPipe, RouterLink, LiveTimelineComponent],
+  imports: [DatePipe, DecimalPipe, RouterLink, SignedNumberPipe, LiveTimelineComponent],
   templateUrl: './live-matches.component.html',
   styleUrl: './live-matches.component.css',
 })
 export class LiveMatchesComponent {
   private readonly api = inject(ApiService);
   private readonly leagueContext = inject(LeagueContextService);
-  private readonly liveHub = inject(LiveHubService);
-  private readonly initialLiveUpdate = this.liveHub.lastLiveMatchesUpdate();
+  private readonly now = createNowSignal();
+  private readonly teamChanges = createPointsChangeTracker();
+  private readonly playerChanges = createPointsChangeTracker();
 
   private readonly teamPanel = viewChild<ElementRef<HTMLElement>>('teamPanel');
 
@@ -35,7 +42,16 @@ export class LiveMatchesComponent {
   readonly expandedPlayerId = signal<string | null>(null);
   readonly positionLabels = POSITION_LABELS;
 
-  readonly matches = computed(() => this.matchday()?.matches ?? []);
+  readonly matches = computed(() => {
+    const deltas = this.teamChanges.deltas();
+    const now = this.now();
+    return (this.matchday()?.matches ?? []).map((match) => ({
+      ...match,
+      isStale: match.status === 'Live' && isLiveDataStale(match.pointsUpdatedAt, now),
+      home: { ...match.home, pointsDelta: deltas.get(teamKey(match.matchId, match.home.teamId)) ?? 0 },
+      away: { ...match.away, pointsDelta: deltas.get(teamKey(match.matchId, match.away.teamId)) ?? 0 },
+    }));
+  });
 
   readonly liveMatchCount = computed(() => this.matches().filter((match) => match.status === 'Live').length);
 
@@ -44,9 +60,19 @@ export class LiveMatchesComponent {
     return this.matches().find((match) => match.matchId === selected?.matchId) ?? null;
   });
 
-  readonly teamPlayers = computed(() =>
-    (this.teamPoints()?.players ?? []).map((player) => ({ ...player, events: summarizeMatchEvents(player.eventKeys) })),
-  );
+  readonly selectedTeamDelta = computed(() => {
+    const selected = this.selectedTeam();
+    return selected ? (this.teamChanges.deltas().get(teamKey(selected.matchId, selected.teamId)) ?? 0) : 0;
+  });
+
+  readonly teamPlayers = computed(() => {
+    const deltas = this.playerChanges.deltas();
+    return (this.teamPoints()?.players ?? []).map((player) => ({
+      ...player,
+      events: summarizeMatchEvents(player.eventKeys),
+      pointsDelta: deltas.get(player.playerId) ?? 0,
+    }));
+  });
 
   constructor() {
     effect(() => {
@@ -61,24 +87,17 @@ export class LiveMatchesComponent {
       }
     });
 
-    effect(() => {
-      const update = this.liveHub.lastLiveMatchesUpdate();
-      if (!update || update === this.initialLiveUpdate) {
+    onLiveRefresh(() => {
+      const leagueId = this.leagueContext.selectedLeagueId();
+      if (!leagueId) {
         return;
       }
 
-      untracked(() => {
-        const leagueId = this.leagueContext.selectedLeagueId();
-        if (!leagueId || this.leagueContext.selectedLeague()?.competitionId !== update.competitionId) {
-          return;
-        }
-
-        this.loadMatches(leagueId, true);
-        const selected = this.selectedTeam();
-        if (selected) {
-          this.loadTeam(leagueId, selected, true);
-        }
-      });
+      this.loadMatches(leagueId, true);
+      const selected = this.selectedTeam();
+      if (selected) {
+        this.loadTeam(leagueId, selected, true);
+      }
     });
   }
 
@@ -134,6 +153,13 @@ export class LiveMatchesComponent {
     }
     this.api.getLiveMatches(leagueId).subscribe({
       next: (matchday) => {
+        this.teamChanges.update(
+          matchday.matches.flatMap((match) => [
+            [teamKey(match.matchId, match.home.teamId), match.home.points] as const,
+            [teamKey(match.matchId, match.away.teamId), match.away.points] as const,
+          ]),
+          silent,
+        );
         this.matchday.set(matchday);
         this.matchesLoading.set(false);
       },
@@ -149,6 +175,10 @@ export class LiveMatchesComponent {
       next: (points) => {
         const selected = this.selectedTeam();
         if (selected?.matchId === team.matchId && selected.teamId === team.teamId) {
+          this.playerChanges.update(
+            points.players.map((player) => [player.playerId, player.points] as const),
+            silent,
+          );
           this.teamPoints.set(points);
         }
         this.teamLoading.set(false);

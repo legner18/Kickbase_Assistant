@@ -20,6 +20,22 @@
   </div>
 </div>
 
+@if (radar(); as fairValueRadar) {
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <h2>Fair-Value-Radar</h2>
+        <p class="hint radar-hint">Marktwert gegen Ø Punkte. Wer über der Linie liegt, liefert mehr, als für seinen Preis üblich ist.</p>
+      </div>
+    </div>
+    @if (fairValueRadar.players.length > 0) {
+      <app-fair-value-radar [radar]="fairValueRadar" [positionFilter]="positionFilter()" (playerClick)="openPlayer($event)" />
+    } @else {
+      <p class="empty-state">Noch keine Spieler mit genug Punkten.</p>
+    }
+  </div>
+}
+
 @if (loading()) {
   <div class="card"><div class="skeleton" style="height: 320px"></div></div>
 } @else if (filtered().length === 0) {

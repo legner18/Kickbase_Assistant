@@ -15,17 +15,24 @@
       @for (match of matches(); track match.matchId) {
         <div class="match-card" [class.match-card-live]="match.status === 'Live'">
           <div class="match-meta">
-            @switch (match.status) {
-              @case ('Live') {
-                <span class="badge badge-critical">Live{{ match.minute ? ' · ' + match.minute + '′' : '' }}</span>
+            <span class="match-status">
+              @switch (match.status) {
+                @case ('Live') {
+                  <span class="badge badge-critical">Live{{ match.minute ? ' · ' + match.minute + '′' : '' }}</span>
+                }
+                @case ('Finished') {
+                  <span class="badge badge-neutral">Beendet</span>
+                }
+                @default {
+                  <span class="match-kickoff">{{ match.kickoffAt | date: 'EEE dd.MM. HH:mm' : undefined : 'de' }}</span>
+                }
               }
-              @case ('Finished') {
-                <span class="badge badge-neutral">Beendet</span>
+              @if (match.isStale) {
+                <span class="badge badge-warning" title="Die Punkte dieses Spiels wurden länger nicht aktualisiert">
+                  Stand {{ match.pointsUpdatedAt | date: 'HH:mm' }}
+                </span>
               }
-              @default {
-                <span class="match-kickoff">{{ match.kickoffAt | date: 'EEE dd.MM. HH:mm' : undefined : 'de' }}</span>
-              }
-            }
+            </span>
             @if (match.status !== 'NotStarted') {
               <span class="match-points-label">Punkte</span>
             }
@@ -44,7 +51,15 @@
                   {{ team.ownPlayerCount }} eigene · {{ team.ownPoints | number: '1.0-0' : 'de' }}
                 </span>
               }
-              <span class="team-points" [class.negative]="(team.points ?? 0) < 0">
+              @if (team.pointsDelta !== 0) {
+                <span class="points-delta" [class.points-delta-down]="team.pointsDelta < 0">{{ team.pointsDelta | signedNumber }}</span>
+              }
+              <span
+                class="team-points"
+                [class.negative]="(team.points ?? 0) < 0"
+                [class.points-flash-up]="team.pointsDelta > 0"
+                [class.points-flash-down]="team.pointsDelta < 0"
+              >
                 {{ team.points !== null ? (team.points | number: '1.0-0' : 'de') : '' }}
               </span>
               <span class="team-goals">{{ team.goals ?? '–' }}</span>
@@ -71,6 +86,9 @@
           @if (teamPoints(); as points) {
             <div class="live-panel-total" [class.negative]="(points.points ?? 0) < 0">
               {{ points.points !== null ? (points.points | number: '1.0-0' : 'de') : '–' }}
+              @if (selectedTeamDelta() !== 0) {
+                <span class="points-delta" [class.points-delta-down]="selectedTeamDelta() < 0">{{ selectedTeamDelta() | signedNumber }}</span>
+              }
               <span>Punkte</span>
             </div>
           }
@@ -130,7 +148,17 @@
                     </div>
                   </td>
                   <td class="hide-mobile">{{ player.position !== null ? positionLabels[player.position] : '–' }}</td>
-                  <td class="player-points" [class.negative]="player.points < 0">{{ player.points | number: '1.0-0' : 'de' }}</td>
+                  <td
+                    class="player-points"
+                    [class.negative]="player.points < 0"
+                    [class.points-flash-up]="player.pointsDelta > 0"
+                    [class.points-flash-down]="player.pointsDelta < 0"
+                  >
+                    {{ player.points | number: '1.0-0' : 'de' }}
+                    @if (player.pointsDelta !== 0) {
+                      <span class="points-delta" [class.points-delta-down]="player.pointsDelta < 0">{{ player.pointsDelta | signedNumber }}</span>
+                    }
+                  </td>
                   <td class="hide-mobile">
                     <div class="event-chips">
                       @for (event of player.events; track event.label) {

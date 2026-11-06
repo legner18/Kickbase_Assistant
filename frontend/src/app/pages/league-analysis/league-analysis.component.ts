@@ -3,11 +3,13 @@ import { Component, computed, effect, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { ApiService } from '../../core/api.service';
 import { LeagueContextService } from '../../core/league-context.service';
-import { FairValueComparisonEntry, LeagueTransfer, ManagerStat } from '../../core/models';
+import { FairValueComparisonEntry, LeagueOverview, LeagueTransfer, ManagerStat } from '../../core/models';
+import { SignedNumberPipe } from '../../shared/signed-number.pipe';
+import { RankChartMode, RankHistoryChartComponent } from './rank-history-chart.component';
 
 @Component({
   selector: 'app-league-analysis',
-  imports: [DecimalPipe, DatePipe, NgStyle, RouterLink],
+  imports: [DecimalPipe, DatePipe, NgStyle, RouterLink, RankHistoryChartComponent, SignedNumberPipe],
   templateUrl: './league-analysis.component.html',
   styleUrl: './league-analysis.component.css',
 })
@@ -18,6 +20,8 @@ export class LeagueAnalysisComponent {
   readonly managerStats = signal<ManagerStat[]>([]);
   readonly transfers = signal<LeagueTransfer[]>([]);
   readonly fairValueComparison = signal<FairValueComparisonEntry[]>([]);
+  readonly overview = signal<LeagueOverview | null>(null);
+  readonly rankChartMode = signal<RankChartMode>('rank');
   readonly loading = signal(true);
 
   readonly sortedStats = computed(() => [...this.managerStats()].sort((a, b) => b.estimatedBudget - a.estimatedBudget));
@@ -69,6 +73,11 @@ export class LeagueAnalysisComponent {
       this.loading.set(false);
     });
     this.api.getFairValueComparison(leagueId).subscribe((comparison) => this.fairValueComparison.set(comparison));
+    this.api.getLeagueOverview(leagueId).subscribe((overview) => this.overview.set(overview));
+  }
+
+  onRankChartModeClick(mode: RankChartMode): void {
+    this.rankChartMode.set(mode);
   }
 
   refresh(): void {

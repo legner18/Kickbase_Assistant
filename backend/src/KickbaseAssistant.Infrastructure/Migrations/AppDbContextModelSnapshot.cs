@@ -22,6 +22,43 @@ namespace KickbaseAssistant.Infrastructure.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("KickbaseAssistant.Domain.Leagues.AssignedPlayerValue", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTimeOffset>("AssignedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("LeagueId")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("ManagerId")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<double>("MarketValue")
+                        .HasColumnType("double precision");
+
+                    b.Property<string>("PlayerId")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LeagueId", "ManagerId", "PlayerId")
+                        .IsUnique();
+
+                    b.ToTable("AssignedPlayerValues");
+                });
+
             modelBuilder.Entity("KickbaseAssistant.Domain.Leagues.BalanceAlertSent", b =>
                 {
                     b.Property<long>("Id")
@@ -344,6 +381,52 @@ namespace KickbaseAssistant.Infrastructure.Migrations
                         .IsUnique();
 
                     b.ToTable("LiveManagerScores");
+                });
+
+            modelBuilder.Entity("KickbaseAssistant.Domain.Leagues.ManagerMatchdayResult", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("LeagueId")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("ManagerId")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("ManagerName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<int>("MatchdayNumber")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("MatchdayRank")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Points")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("PointsCounted")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LeagueId", "ManagerId", "MatchdayNumber")
+                        .IsUnique();
+
+                    b.ToTable("ManagerMatchdayResults");
                 });
 
             modelBuilder.Entity("KickbaseAssistant.Domain.Leagues.SquadMembership", b =>
@@ -712,6 +795,118 @@ namespace KickbaseAssistant.Infrastructure.Migrations
                         .IsUnique();
 
                     b.ToTable("MarketValueSnapshots");
+                });
+
+            modelBuilder.Entity("KickbaseAssistant.Domain.Players.MatchOdds", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<double>("AwayOdds")
+                        .HasColumnType("double precision");
+
+                    b.Property<double>("AwayWinProbability")
+                        .HasColumnType("double precision");
+
+                    b.Property<int>("BookmakerCount")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("CompetitionId")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<double>("DrawOdds")
+                        .HasColumnType("double precision");
+
+                    b.Property<double>("DrawProbability")
+                        .HasColumnType("double precision");
+
+                    b.Property<double>("ExpectedAwayGoals")
+                        .HasColumnType("double precision");
+
+                    b.Property<double>("ExpectedHomeGoals")
+                        .HasColumnType("double precision");
+
+                    b.Property<double>("HomeOdds")
+                        .HasColumnType("double precision");
+
+                    b.Property<double>("HomeWinProbability")
+                        .HasColumnType("double precision");
+
+                    b.Property<string>("MatchId")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("SourceAwayTeam")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("SourceHomeTeam")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MatchId")
+                        .IsUnique();
+
+                    b.ToTable("MatchOdds");
+                });
+
+            modelBuilder.Entity("KickbaseAssistant.Domain.Players.OwnMarketOffer", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTimeOffset>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("LeagueId")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<int>("ListingPrice")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("MarketValue")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("OfferPrice")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("PlayerId")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("PlayerName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LeagueId", "PlayerId")
+                        .IsUnique();
+
+                    b.ToTable("OwnMarketOffers");
                 });
 
             modelBuilder.Entity("KickbaseAssistant.Domain.Players.Player", b =>

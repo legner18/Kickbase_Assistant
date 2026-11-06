@@ -8,4 +8,7 @@ public class LiveMatchStateCache
     public IReadOnlyDictionary<int, string> EventTypeTitles { get; set; } = new Dictionary<int, string>();
     public DateTimeOffset? EventTypesLoadedAt { get; set; }
     public DateTimeOffset? PausedUntil { get; set; }
+    public DateTimeOffset? LastSuccessAt { get; set; }
+    public DateTimeOffset? FullSyncStartedAt { get; set; }
+    public ConcurrentDictionary<string, string?> MatchdayLeaderByLeague { get; } = new();
 }

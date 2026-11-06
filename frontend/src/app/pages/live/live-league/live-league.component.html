@@ -4,7 +4,9 @@
   <div class="league-header">
     <h2>Spieltag {{ standings()?.matchday }}</h2>
     @if (standings()?.updatedAt) {
-      <span class="league-updated">Stand {{ standings()?.updatedAt | date: 'HH:mm:ss' }} Uhr</span>
+      <span class="league-updated" [class.league-updated-stale]="standingsStale()">
+        Stand {{ standings()?.updatedAt | date: 'HH:mm:ss' }} Uhr{{ standingsStale() ? ' · veraltet' : '' }}
+      </span>
     }
   </div>
 
@@ -43,8 +45,11 @@
                   }
                 </div>
               </td>
-              <td>
+              <td [class.points-flash-up]="standing.pointsDelta > 0" [class.points-flash-down]="standing.pointsDelta < 0">
                 <span class="manager-points" [class.negative]="standing.points < 0">{{ standing.points | number: '1.0-0' : 'de' }}</span>
+                @if (standing.pointsDelta !== 0) {
+                  <span class="points-delta" [class.points-delta-down]="standing.pointsDelta < 0">{{ standing.pointsDelta | signedNumber }}</span>
+                }
                 @if (!standing.pointsCounted) {
                   <span class="badge badge-warning" title="Kickbase wertet die Punkte dieses Spieltags für diesen Manager nicht">nicht gewertet</span>
                 }
@@ -81,6 +86,9 @@
           </div>
           <div class="live-panel-total" [class.negative]="detail.points < 0">
             {{ detail.points | number: '1.0-0' : 'de' }}
+            @if (selectedManagerDelta() !== 0) {
+              <span class="points-delta" [class.points-delta-down]="selectedManagerDelta() < 0">{{ selectedManagerDelta() | signedNumber }}</span>
+            }
             <span>Punkte</span>
           </div>
         </div>
@@ -185,8 +193,16 @@
         <span class="muted">kein Spiel</span>
       }
     </td>
-    <td class="player-points" [class.negative]="(player.points ?? 0) < 0">
+    <td
+      class="player-points"
+      [class.negative]="(player.points ?? 0) < 0"
+      [class.points-flash-up]="player.pointsDelta > 0"
+      [class.points-flash-down]="player.pointsDelta < 0"
+    >
       {{ player.points !== null ? (player.points | number: '1.0-0' : 'de') : '–' }}
+      @if (player.pointsDelta !== 0) {
+        <span class="points-delta" [class.points-delta-down]="player.pointsDelta < 0">{{ player.pointsDelta | signedNumber }}</span>
+      }
     </td>
     <td class="hide-mobile">
       <div class="event-chips">

@@ -40,6 +40,11 @@ public class KickbaseMarketPlayerDto
     /// <summary>Seconds until the listing expires.</summary>
     [JsonPropertyName("exs")]
     public int ExpiresInSeconds { get; set; }
+
+    /// <summary>Eigenes Gebot auf diese Listung - live verifiziert am 2026-11-05 mit einem echten
+    /// Gebot (Community-Spec nennt das Feld nicht); fehlt, wenn kein eigenes Gebot abgegeben ist.</summary>
+    [JsonPropertyName("uop")]
+    public int? UserOfferPrice { get; set; }
 }
 
 public class KickbaseMarketResponseDto

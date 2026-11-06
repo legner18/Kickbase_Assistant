@@ -1,6 +1,7 @@
 using System.Text.Json.Serialization;
 using KickbaseAssistant.Api.Realtime;
 using KickbaseAssistant.Infrastructure;
+using KickbaseAssistant.Infrastructure.Realtime;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,6 +12,8 @@ builder.Services.AddControllers()
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddSignalR();
+builder.Services.Configure<LiveHubOptions>(builder.Configuration.GetSection(LiveHubOptions.SectionName));
+builder.Services.AddSingleton<LiveWorkerStatusStore>();
 
 const string FrontendCorsPolicy = "Frontend";
 builder.Services.AddCors(options =>
@@ -28,6 +31,11 @@ builder.Services.AddCors(options =>
 });
 
 var app = builder.Build();
+
+if (string.IsNullOrWhiteSpace(app.Configuration[$"{LiveHubOptions.SectionName}:PublishKey"]))
+{
+    app.Logger.LogWarning("LiveHub:PublishKey ist nicht gesetzt - der Worker kann keine Live-Updates an das Frontend senden.");
+}
 
 if (app.Environment.IsDevelopment())
 {

@@ -1,11 +1,21 @@
-import { DecimalPipe } from '@angular/common';
+import { DatePipe, DecimalPipe } from '@angular/common';
 import { Component, computed, effect, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { ApiService } from '../../core/api.service';
 import { LeagueContextService } from '../../core/league-context.service';
-import { LINEUP_STATUS_LABELS, LeagueManager, MarkingColor, POSITION_LABELS, Player, PlayerMarking } from '../../core/models';
+import {
+  LINEUP_STATUS_LABELS,
+  LeagueManager,
+  MarkingColor,
+  POSITION_LABELS,
+  Player,
+  PlayerMarking,
+  SquadForecast,
+  SquadForecastPlayer,
+} from '../../core/models';
+import { SignedNumberPipe } from '../../shared/signed-number.pipe';
 import { SparklineComponent } from '../../shared/sparkline/sparkline.component';
 
 type SortKey = 'name' | 'position' | 'marketValue' | 'change' | 'totalPoints' | 'sellScore';
@@ -13,7 +23,7 @@ const MARKING_COLORS: MarkingColor[] = ['None', 'Green', 'Yellow', 'Red', 'Blue'
 
 @Component({
   selector: 'app-squad',
-  imports: [DecimalPipe, SparklineComponent],
+  imports: [DatePipe, DecimalPipe, SignedNumberPipe, SparklineComponent],
   templateUrl: './squad.component.html',
   styleUrl: './squad.component.css',
 })
@@ -31,6 +41,16 @@ export class SquadComponent {
 
   readonly managers = signal<LeagueManager[]>([]);
   readonly selectedManagerId = signal<string | null>(null);
+
+  readonly forecast = signal<SquadForecast | null>(null);
+  readonly forecastByPlayerId = computed(() => {
+    const forecastPlayers = this.forecast()?.players ?? [];
+    return new Map<string, SquadForecastPlayer>(forecastPlayers.map((forecastPlayer) => [forecastPlayer.playerId, forecastPlayer]));
+  });
+  readonly isOwnSquad = computed(() => {
+    const managerId = this.selectedManagerId();
+    return managerId === null || this.managers().some((manager) => manager.isMe && manager.managerId === managerId);
+  });
 
   readonly markings = signal<Record<string, PlayerMarking>>({});
   readonly markingFilter = signal<MarkingColor | null>(null);
@@ -96,6 +116,7 @@ export class SquadComponent {
 
   load(leagueId: string, managerId: string | undefined): void {
     this.loading.set(true);
+    this.loadForecast(leagueId, managerId);
     this.api.getMarkings(leagueId).subscribe((markings) => {
       this.markings.set(Object.fromEntries(markings.map((m) => [m.playerId, m])));
     });
@@ -127,6 +148,18 @@ export class SquadComponent {
     if (leagueId) {
       this.load(leagueId, this.selectedManagerId() ?? undefined);
     }
+  }
+
+  private loadForecast(leagueId: string, managerId: string | undefined): void {
+    const isOwnManager = !managerId || this.managers().some((manager) => manager.isMe && manager.managerId === managerId);
+    if (!isOwnManager) {
+      this.forecast.set(null);
+      return;
+    }
+    this.api
+      .getSquadForecast(leagueId)
+      .pipe(catchError(() => of(null)))
+      .subscribe((forecast) => this.forecast.set(forecast));
   }
 
   setSort(key: SortKey): void {

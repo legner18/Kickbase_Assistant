@@ -1,0 +1,219 @@
+<div class="card-header page-header">
+  <div>
+    <h1>Transfer-Bilanz</h1>
+    <p class="hint">
+      {{ leagueContext.selectedLeague()?.name }} · Verkäufe gegen Kaufpreis, zugeloste Spieler gegen ihren Marktwert
+      @if (balance()?.assignedAt; as assignedAt) {
+        am {{ assignedAt | date: 'dd.MM.yyyy' }} (Tag deines ersten Transfers)
+      } @else {
+        beim Start
+      }
+    </p>
+  </div>
+  <button class="icon-btn" (click)="onRefreshClick()" title="Aktualisieren">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 12a9 9 0 1 1-2.6-6.4" /><path d="M21 4v5h-5" />
+    </svg>
+  </button>
+</div>
+
+@if (loading()) {
+  <div class="card"><div class="skeleton" style="height: 240px"></div></div>
+} @else if (!balance()) {
+  <p class="empty-state">Keine Transferdaten für diese Liga.</p>
+} @else {
+  @let data = balance()!;
+  <div class="card-grid">
+    <div class="card stat-card">
+      <div>
+        <div class="stat-label">Transfergewinn</div>
+        <div class="stat" [class.positive]="data.realizedProfit > 0" [class.negative]="data.realizedProfit < 0">
+          {{ data.realizedProfit | signedNumber }} €
+        </div>
+        <div class="stat-sub">{{ data.salesCount }} Verkäufe erfasst</div>
+      </div>
+    </div>
+    <div class="card stat-card">
+      <div>
+        <div class="stat-label">Trefferquote</div>
+        <div class="stat">{{ hitRatePercent() !== null ? (hitRatePercent() | number: '1.0-0' : 'de') + ' %' : '–' }}</div>
+        <div class="stat-sub">
+          {{ data.profitableSalesCount }} von {{ data.salesCount }} im Plus
+          @if (data.averageHeldDays !== null) {
+            · Ø {{ data.averageHeldDays | number: '1.0-0' : 'de' }} Tage gehalten
+          }
+        </div>
+      </div>
+    </div>
+    <div class="card stat-card">
+      <div>
+        <div class="stat-label">Wertzuwachs aktueller Kader</div>
+        <div class="stat" [class.positive]="data.unrealizedProfit > 0" [class.negative]="data.unrealizedProfit < 0">
+          {{ data.unrealizedProfit | signedNumber }} €
+        </div>
+        <div class="stat-sub">Marktwert minus Kaufpreis, {{ data.openPositionsCount }} Spieler</div>
+      </div>
+    </div>
+    <div class="card stat-card">
+      <div>
+        <div class="stat-label">Ø Overpay beim Kauf</div>
+        <div class="stat">
+          {{ data.ownOverpay.averagePercent !== null ? (data.ownOverpay.averagePercent | signedNumber: '1.1-1') + ' %' : '–' }}
+        </div>
+        <div class="stat-sub">
+          {{ data.ownOverpay.count }} Käufe · Rest der Liga
+          {{ data.leagueOverpay.averagePercent !== null ? (data.leagueOverpay.averagePercent | signedNumber: '1.1-1') + ' %' : '–' }}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><h2>Höhepunkte</h2></div>
+    @if (data.bestOpen; as position) {
+      <div class="highlight-row highlight-good" (click)="onPlayerClick(position.playerId)">
+        <div>
+          <div class="highlight-label">Bester Transfer · noch im Kader</div>
+          <strong>{{ position.playerName }}</strong>
+          @if (position.wasAssigned) {
+            <span class="badge badge-neutral">zugelost</span>
+          }
+          <div class="highlight-detail">
+            {{ position.wasAssigned ? 'Startwert' : 'Kauf' }} {{ position.acquisitionValue | number: '1.0-0' : 'de' }} € → aktuell
+            {{ position.marketValue | number: '1.0-0' : 'de' }} €
+          </div>
+        </div>
+        <span [class]="position.profit >= 0 ? 'positive' : 'negative'">{{ position.profit | signedNumber }} €</span>
+      </div>
+    }
+    @if (data.worstOpen; as position) {
+      <div class="highlight-row highlight-bad" (click)="onPlayerClick(position.playerId)">
+        <div>
+          <div class="highlight-label">Schwächster Transfer · noch im Kader</div>
+          <strong>{{ position.playerName }}</strong>
+          @if (position.wasAssigned) {
+            <span class="badge badge-neutral">zugelost</span>
+          }
+          <div class="highlight-detail">
+            {{ position.wasAssigned ? 'Startwert' : 'Kauf' }} {{ position.acquisitionValue | number: '1.0-0' : 'de' }} € → aktuell
+            {{ position.marketValue | number: '1.0-0' : 'de' }} €
+          </div>
+        </div>
+        <span [class]="position.profit >= 0 ? 'positive' : 'negative'">{{ position.profit | signedNumber }} €</span>
+      </div>
+    }
+    @if (data.bestClosed; as position) {
+      <div class="highlight-row highlight-good" (click)="onPlayerClick(position.playerId)">
+        <div>
+          <div class="highlight-label">Bester Transfer · verkauft</div>
+          <strong>{{ position.playerName }}</strong>
+          @if (position.wasAssigned) {
+            <span class="badge badge-neutral">zugelost</span>
+          }
+          <div class="highlight-detail">
+            {{ position.wasAssigned ? 'Startwert' : 'Kauf' }} {{ position.acquisitionValue | number: '1.0-0' : 'de' }} € → Verkauf
+            {{ position.salePrice | number: '1.0-0' : 'de' }} € · {{ position.heldDays | number: '1.0-0' : 'de' }} Tage gehalten
+          </div>
+        </div>
+        <span [class]="position.profit >= 0 ? 'positive' : 'negative'">{{ position.profit | signedNumber }} €</span>
+      </div>
+    }
+    @if (data.worstClosed; as position) {
+      <div class="highlight-row highlight-bad" (click)="onPlayerClick(position.playerId)">
+        <div>
+          <div class="highlight-label">Schwächster Transfer · verkauft</div>
+          <strong>{{ position.playerName }}</strong>
+          @if (position.wasAssigned) {
+            <span class="badge badge-neutral">zugelost</span>
+          }
+          <div class="highlight-detail">
+            {{ position.wasAssigned ? 'Startwert' : 'Kauf' }} {{ position.acquisitionValue | number: '1.0-0' : 'de' }} € → Verkauf
+            {{ position.salePrice | number: '1.0-0' : 'de' }} € · {{ position.heldDays | number: '1.0-0' : 'de' }} Tage gehalten
+          </div>
+        </div>
+        <span [class]="position.profit >= 0 ? 'positive' : 'negative'">{{ position.profit | signedNumber }} €</span>
+      </div>
+    }
+    @if (!data.bestOpen && !data.bestClosed) {
+      <p class="empty-state">Noch keine Transfers erfasst.</p>
+    }
+    <p class="hint footnote">
+      Davon {{ data.assignedCount }} zugeloste Spieler. Der Overpay ist nur für Käufe der letzten 30 Tage bekannt.
+      @if (missingValueNames().length > 0) {
+        Ohne Startwert und darum nicht eingerechnet: {{ missingValueNames().join(', ') }}.
+      }
+    </p>
+  </div>
+
+  <div class="card card-table">
+    <div class="card-header table-title"><h2>Verkäufe</h2></div>
+    @if (data.closed.length === 0) {
+      <p class="empty-state">Noch keine Verkäufe.</p>
+    } @else {
+      <table>
+        <thead>
+          <tr>
+            <th class="sticky-col">Spieler</th>
+            <th>Kauf / Startwert</th>
+            <th>Verkauf</th>
+            <th>Gewinn</th>
+            <th>Gehalten</th>
+            <th>Verkauft am</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (position of data.closed; track position.playerId + position.soldAt) {
+            <tr class="clickable-row" (click)="onPlayerClick(position.playerId)">
+              <td class="sticky-col">
+                {{ position.playerName }}
+                @if (position.wasAssigned) {
+                  <span class="badge badge-neutral">zugelost</span>
+                }
+              </td>
+              <td>{{ position.acquisitionValue | number: '1.0-0' : 'de' }} €</td>
+              <td>{{ position.salePrice | number: '1.0-0' : 'de' }} €</td>
+              <td [class]="position.profit >= 0 ? 'positive' : 'negative'">{{ position.profit | signedNumber }} €</td>
+              <td>{{ position.heldDays | number: '1.0-0' : 'de' }} Tage</td>
+              <td>{{ position.soldAt | date: 'dd.MM.yyyy' }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+  </div>
+
+  <div class="card card-table">
+    <div class="card-header table-title"><h2>Aktueller Kader</h2></div>
+    @if (data.open.length === 0) {
+      <p class="empty-state">Keine Spieler mit bekanntem Kaufpreis oder Startwert.</p>
+    } @else {
+      <table>
+        <thead>
+          <tr>
+            <th class="sticky-col">Spieler</th>
+            <th>Kauf / Startwert</th>
+            <th>Marktwert</th>
+            <th>Bilanz</th>
+            <th>Im Kader seit</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (position of data.open; track position.playerId) {
+            <tr class="clickable-row" (click)="onPlayerClick(position.playerId)">
+              <td class="sticky-col">
+                {{ position.playerName }}
+                @if (position.wasAssigned) {
+                  <span class="badge badge-neutral">zugelost</span>
+                }
+              </td>
+              <td>{{ position.acquisitionValue | number: '1.0-0' : 'de' }} €</td>
+              <td>{{ position.marketValue | number: '1.0-0' : 'de' }} €</td>
+              <td [class]="position.profit >= 0 ? 'positive' : 'negative'">{{ position.profit | signedNumber }} €</td>
+              <td>{{ position.acquiredAt | date: 'dd.MM.yyyy' }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+  </div>
+}

@@ -1,0 +1,147 @@
+.hint {
+  margin: 0.15rem 0 0;
+  max-width: 70ch;
+}
+
+.odds-hint {
+  margin: -0.6rem 0 1rem;
+}
+
+.match-row {
+  display: grid;
+  grid-template-columns: 7.5rem 1fr;
+  gap: 1rem;
+  padding: 0.8rem 0;
+  border-bottom: 1px solid var(--gridline);
+}
+
+.match-row:last-child {
+  border-bottom: none;
+}
+
+.match-time {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  display: flex;
+  flex-direction: column;
+}
+
+.match-time span {
+  color: var(--text-primary);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.match-teams {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 0.75rem;
+  font-weight: 600;
+}
+
+.team-home {
+  text-align: right;
+}
+
+.score {
+  min-width: 3.5rem;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  padding: 0.15rem 0.5rem;
+  border-radius: var(--radius-sm);
+  background: var(--surface-sunken);
+}
+
+.score-live {
+  color: var(--status-critical);
+}
+
+.match-sub {
+  margin-top: 0.35rem;
+  font-size: 0.76rem;
+  color: var(--text-muted);
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.match-outcome {
+  margin-top: 0.6rem;
+}
+
+.two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+}
+
+.table-title {
+  padding: 1.1rem 1.3rem 0;
+}
+
+.table-hint {
+  padding: 0.6rem 1.3rem 1rem;
+  margin: 0;
+}
+
+.mvp-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  padding: 0.45rem 0;
+  border-bottom: 1px solid var(--gridline);
+  font-size: 0.87rem;
+  cursor: pointer;
+}
+
+.mvp-row:last-child {
+  border-bottom: none;
+}
+
+.mvp-row:hover .mvp-name {
+  text-decoration: underline;
+}
+
+.mvp-matchday {
+  width: 3rem;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.mvp-name {
+  flex: 1;
+  min-width: 0;
+}
+
+.mvp-name .muted {
+  margin-left: 0.3rem;
+  font-size: 0.78rem;
+}
+
+.mvp-points {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.fixture-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+@media (max-width: 700px) {
+  .match-row {
+    grid-template-columns: 1fr;
+    gap: 0.4rem;
+  }
+
+  .match-time {
+    flex-direction: row;
+    gap: 0.4rem;
+  }
+
+  .two-col {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+}

@@ -1,9 +1,11 @@
+using System.Collections.Concurrent;
 using KickbaseAssistant.Domain.Leagues;
 using KickbaseAssistant.Domain.Players;
 using KickbaseAssistant.Infrastructure.Data;
 using KickbaseAssistant.Infrastructure.Kickbase;
 using KickbaseAssistant.Infrastructure.Kickbase.Dtos;
 using KickbaseAssistant.Infrastructure.Leagues;
+using KickbaseAssistant.Infrastructure.Notifications;
 using KickbaseAssistant.Infrastructure.Players;
 using KickbaseAssistant.Infrastructure.Realtime;
 using Microsoft.EntityFrameworkCore;
@@ -18,11 +20,15 @@ public class LiveMatchJob(
     LiveMatchStateCache stateCache,
     LiveLeagueSyncService liveLeagueSyncService,
     LiveTimelineSyncService liveTimelineSyncService,
+    LiveNotificationService liveNotificationService,
     AppDbContext dbContext,
     ILogger<LiveMatchJob> logger) : IJob
 {
     private const int NotStartedStatus = 0;
     private const int FinishedStatus = 2;
+    private const int MaxParallelTeamCenterFetches = 3;
+    private static readonly TimeSpan FullSyncInterval = TimeSpan.FromSeconds(30);
+    private static readonly TimeSpan FullSyncTolerance = TimeSpan.FromSeconds(1);
     private static readonly TimeSpan ScheduleSyncInterval = TimeSpan.FromHours(6);
     private static readonly TimeSpan MaxMatchDuration = TimeSpan.FromHours(3);
     private static readonly TimeSpan PostMatchRefreshWindow = TimeSpan.FromMinutes(15);
@@ -32,57 +38,97 @@ public class LiveMatchJob(
     public async Task Execute(IJobExecutionContext context)
     {
         var ct = context.CancellationToken;
-        if (stateCache.PausedUntil > DateTimeOffset.UtcNow)
+        var now = DateTimeOffset.UtcNow;
+        var fullSync = stateCache.FullSyncStartedAt is not { } lastFullSync || now - lastFullSync >= FullSyncInterval - FullSyncTolerance;
+        if (fullSync)
         {
+            stateCache.FullSyncStartedAt = now;
+        }
+
+        if (stateCache.PausedUntil > now)
+        {
+            if (fullSync)
+            {
+                await PublishStatusAsync(ct);
+            }
             return;
         }
 
         var activeLeagues = await dbContext.Leagues.Where(league => league.IsActive).ToListAsync(ct);
+        var publishStatus = fullSync;
 
         try
         {
+            var succeeded = true;
             foreach (var competitionLeagues in activeLeagues.GroupBy(league => league.CompetitionId))
             {
-                await SyncCompetitionAsync(competitionLeagues.Key, [.. competitionLeagues], ct);
+                succeeded &= await SyncCompetitionAsync(competitionLeagues.Key, [.. competitionLeagues], fullSync, ct);
+            }
+
+            if (succeeded)
+            {
+                stateCache.LastSuccessAt = DateTimeOffset.UtcNow;
             }
         }
         catch (Exception ex) when (KickbaseApiClient.IsBlockedResponse(ex))
         {
             dbContext.ChangeTracker.Clear();
             stateCache.PausedUntil = DateTimeOffset.UtcNow + BlockedPause;
+            publishStatus = true;
             logger.LogWarning(ex, "Live-Spiele: Kickbase blockt Anfragen - Live-Polling pausiert bis {PausedUntil:u}.", stateCache.PausedUntil);
+        }
+
+        if (publishStatus)
+        {
+            await PublishStatusAsync(ct);
         }
     }
 
-    private async Task SyncCompetitionAsync(string competitionId, IReadOnlyList<League> leagues, CancellationToken ct)
+    private Task PublishStatusAsync(CancellationToken ct)
     {
-        try
+        var now = DateTimeOffset.UtcNow;
+        var pausedUntil = stateCache.PausedUntil > now ? stateCache.PausedUntil : null;
+        return liveHubClient.PublishLiveStatusAsync(new LiveWorkerStatus(now, stateCache.LastSuccessAt, pausedUntil), ct);
+    }
+
+    private async Task<bool> SyncCompetitionAsync(string competitionId, IReadOnlyList<League> leagues, bool fullSync, CancellationToken ct)
+    {
+        var succeeded = true;
+        if (fullSync)
         {
-            await SyncScheduleIfDueAsync(competitionId, ct);
-        }
-        catch (Exception ex) when (!KickbaseApiClient.IsBlockedResponse(ex))
-        {
-            dbContext.ChangeTracker.Clear();
-            logger.LogWarning(ex, "Live-Spiele: Spielplan für Competition {CompetitionId} konnte nicht geladen werden.", competitionId);
+            try
+            {
+                await SyncScheduleIfDueAsync(competitionId, ct);
+            }
+            catch (Exception ex) when (!KickbaseApiClient.IsBlockedResponse(ex))
+            {
+                dbContext.ChangeTracker.Clear();
+                succeeded = false;
+                logger.LogWarning(ex, "Live-Spiele: Spielplan für Competition {CompetitionId} konnte nicht geladen werden.", competitionId);
+            }
         }
 
-        var refreshedCount = 0;
+        var refresh = new PointsRefreshResult(0, false);
         try
         {
-            refreshedCount = await RefreshRunningMatchesAsync(competitionId, ct);
+            refresh = await RefreshRunningMatchesAsync(competitionId, leagues, fullSync, ct);
         }
         catch (Exception ex) when (!KickbaseApiClient.IsBlockedResponse(ex))
         {
             dbContext.ChangeTracker.Clear();
+            succeeded = false;
             logger.LogWarning(ex, "Live-Spiele: Punkte für Competition {CompetitionId} konnten nicht aktualisiert werden.", competitionId);
         }
 
-        var now = DateTimeOffset.UtcNow;
-        var currentMatchday = await dbContext.LiveMatches
-            .Where(match => match.CompetitionId == competitionId && match.KickoffAt <= now)
-            .MaxAsync(match => (int?)match.MatchdayNumber, ct);
-
+        var refreshedCount = refresh.RefreshedCount;
         var leagueDataChanged = false;
+        var now = DateTimeOffset.UtcNow;
+        var currentMatchday = fullSync
+            ? await dbContext.LiveMatches
+                .Where(match => match.CompetitionId == competitionId && match.KickoffAt <= now)
+                .MaxAsync(match => (int?)match.MatchdayNumber, ct)
+            : null;
+
         if (currentMatchday is not null)
         {
             foreach (var league in leagues)
@@ -95,7 +141,14 @@ public class LiveMatchJob(
                 catch (Exception ex) when (!KickbaseApiClient.IsBlockedResponse(ex))
                 {
                     dbContext.ChangeTracker.Clear();
+                    succeeded = false;
                     logger.LogWarning(ex, "Live-Spiele: Manager-Punkte für Liga {LeagueName} konnten nicht aktualisiert werden.", league.Name);
+                    continue;
+                }
+
+                if (refreshedCount > 0)
+                {
+                    await liveNotificationService.NotifyLeadChangeAsync(league, currentMatchday.Value, ct);
                 }
             }
 
@@ -112,15 +165,20 @@ public class LiveMatchJob(
             catch (Exception ex) when (!KickbaseApiClient.IsBlockedResponse(ex))
             {
                 dbContext.ChangeTracker.Clear();
+                succeeded = false;
                 logger.LogWarning(ex, "Live-Timeline: Ereignisse für Competition {CompetitionId} konnten nicht aktualisiert werden.", competitionId);
             }
         }
 
-        if (refreshedCount > 0 || leagueDataChanged)
+        if (refresh.Changed || leagueDataChanged)
         {
             await liveHubClient.PublishLiveMatchesUpdateAsync(competitionId, ct);
         }
+
+        return succeeded;
     }
+
+    private readonly record struct PointsRefreshResult(int RefreshedCount, bool Changed);
 
     private async Task SyncScheduleIfDueAsync(string competitionId, CancellationToken ct)
     {
@@ -173,7 +231,8 @@ public class LiveMatchJob(
         stateCache.ScheduleSyncedAtByCompetition[competitionId] = now;
     }
 
-    private async Task<int> RefreshRunningMatchesAsync(string competitionId, CancellationToken ct)
+    private async Task<PointsRefreshResult> RefreshRunningMatchesAsync(
+        string competitionId, IReadOnlyList<League> leagues, bool fullSync, CancellationToken ct)
     {
         var now = DateTimeOffset.UtcNow;
         var backfillSince = now - BackfillWindow;
@@ -181,28 +240,24 @@ public class LiveMatchJob(
             .Where(match => match.CompetitionId == competitionId && match.KickoffAt <= now && match.KickoffAt > backfillSince)
             .ToListAsync(ct);
 
-        var runningMatches = recentMatches.Where(match => NeedsPointsRefresh(match, now)).ToList();
+        var runningMatches = recentMatches.Where(match => NeedsPointsRefresh(match, now, fullSync)).ToList();
         if (runningMatches.Count == 0)
         {
-            return 0;
+            return new PointsRefreshResult(0, false);
         }
 
         var runningMatchIds = runningMatches.Select(match => match.Id).ToList();
         await dbContext.LiveMatchPlayers.Where(player => runningMatchIds.Contains(player.MatchId)).LoadAsync(ct);
 
+        var teamCenters = await FetchTeamCentersAsync(competitionId, runningMatches, ct);
+        var eventChanges = new List<LivePlayerEventChange>();
         var refreshedCount = 0;
+        var changed = false;
         foreach (var match in runningMatches)
         {
-            KickbaseTeamCenterDto home;
-            KickbaseTeamCenterDto away;
-            try
+            if (!teamCenters.TryGetValue((match.Id, match.HomeTeamId), out var home)
+                || !teamCenters.TryGetValue((match.Id, match.AwayTeamId), out var away))
             {
-                home = await kickbaseApiClient.GetCompetitionTeamCenterAsync(competitionId, match.HomeTeamId, match.MatchdayNumber, ct);
-                away = await kickbaseApiClient.GetCompetitionTeamCenterAsync(competitionId, match.AwayTeamId, match.MatchdayNumber, ct);
-            }
-            catch (Exception ex) when (!KickbaseApiClient.IsBlockedResponse(ex))
-            {
-                logger.LogWarning(ex, "Live-Spiele: Punkte für Spiel {MatchId} konnten nicht geladen werden.", match.Id);
                 continue;
             }
 
@@ -218,32 +273,66 @@ public class LiveMatchJob(
             var state = home.Match ?? away.Match;
             if (state is not null)
             {
-                ApplyMatchState(match, state.Status, state.IsLive, state.HomeGoals, state.AwayGoals, state.Minute, now);
+                changed |= ApplyMatchState(match, state.Status, state.IsLive, state.HomeGoals, state.AwayGoals, state.Minute, now);
             }
 
+            var changes = match.PointsUpdatedAt is not null ? eventChanges : null;
+            changed |= match.HomeTeamPoints != home.Points || match.AwayTeamPoints != away.Points;
             match.HomeTeamName = home.TeamName;
             match.AwayTeamName = away.TeamName;
             match.HomeTeamPoints = home.Points;
             match.AwayTeamPoints = away.Points;
             match.PointsUpdatedAt = now;
-            ApplyPlayers(match, match.HomeTeamId, home.Players);
-            ApplyPlayers(match, match.AwayTeamId, away.Players);
+            changed |= ApplyPlayers(match, match.HomeTeamId, home.Players, changes);
+            changed |= ApplyPlayers(match, match.AwayTeamId, away.Players, changes);
             refreshedCount++;
         }
 
         await dbContext.SaveChangesAsync(ct);
 
-        if (refreshedCount > 0)
+        if (refreshedCount > 0 && fullSync)
         {
             logger.LogInformation("Live-Spiele: Punkte für {Count} Spiel(e) aktualisiert.", refreshedCount);
         }
 
-        return refreshedCount;
+        await liveNotificationService.NotifyPlayerEventsAsync(eventChanges, leagues, ct);
+        return new PointsRefreshResult(refreshedCount, changed);
     }
 
-    private void ApplyPlayers(LiveMatch match, string teamId, IReadOnlyList<KickbaseTeamCenterPlayerDto> players)
+    private async Task<IReadOnlyDictionary<(string MatchId, string TeamId), KickbaseTeamCenterDto>> FetchTeamCentersAsync(
+        string competitionId, IReadOnlyList<LiveMatch> matches, CancellationToken ct)
+    {
+        var requests = matches
+            .SelectMany(match => new[]
+            {
+                (MatchId: match.Id, TeamId: match.HomeTeamId, match.MatchdayNumber),
+                (MatchId: match.Id, TeamId: match.AwayTeamId, match.MatchdayNumber),
+            })
+            .ToList();
+        var results = new ConcurrentDictionary<(string MatchId, string TeamId), KickbaseTeamCenterDto>();
+        var options = new ParallelOptions { MaxDegreeOfParallelism = MaxParallelTeamCenterFetches, CancellationToken = ct };
+
+        await Parallel.ForEachAsync(requests, options, async (request, token) =>
+        {
+            try
+            {
+                results[(request.MatchId, request.TeamId)] = await kickbaseApiClient.GetCompetitionTeamCenterAsync(
+                    competitionId, request.TeamId, request.MatchdayNumber, token);
+            }
+            catch (Exception ex) when (!KickbaseApiClient.IsBlockedResponse(ex) && !token.IsCancellationRequested)
+            {
+                logger.LogWarning(ex, "Live-Spiele: Punkte für Spiel {MatchId} (Team {TeamId}) konnten nicht geladen werden.", request.MatchId, request.TeamId);
+            }
+        });
+
+        return results;
+    }
+
+    private bool ApplyPlayers(
+        LiveMatch match, string teamId, IReadOnlyList<KickbaseTeamCenterPlayerDto> players, List<LivePlayerEventChange>? eventChanges)
     {
         var existingRows = match.Players.Where(player => player.TeamId == teamId).ToDictionary(player => player.PlayerId);
+        var changed = false;
 
         foreach (var player in players)
         {
@@ -257,17 +346,48 @@ public class LiveMatchJob(
                     PlayerName = player.Name,
                 };
                 match.Players.Add(row);
+                changed = true;
             }
 
+            var newEventKeys = FindNewEventKeys(row.EventKeys, player.EventKeys);
+            if (eventChanges is not null && newEventKeys.Count > 0)
+            {
+                eventChanges.Add(new LivePlayerEventChange(match, player.Id, player.Name, newEventKeys, player.Points));
+            }
+
+            changed |= row.Points != player.Points || !row.EventKeys.SequenceEqual(player.EventKeys);
             row.PlayerName = player.Name;
             row.Points = player.Points;
             row.EventKeys = [.. player.EventKeys];
         }
 
         dbContext.LiveMatchPlayers.RemoveRange(existingRows.Values);
+        return changed || existingRows.Count > 0;
     }
 
-    private static void ApplyMatchState(
+    private static List<int> FindNewEventKeys(IReadOnlyList<int> previousEventKeys, IReadOnlyList<int> currentEventKeys)
+    {
+        var remainingPrevious = previousEventKeys
+            .GroupBy(eventKey => eventKey)
+            .ToDictionary(group => group.Key, group => group.Count());
+        var newEventKeys = new List<int>();
+
+        foreach (var eventKey in currentEventKeys)
+        {
+            if (remainingPrevious.TryGetValue(eventKey, out var count) && count > 0)
+            {
+                remainingPrevious[eventKey] = count - 1;
+            }
+            else
+            {
+                newEventKeys.Add(eventKey);
+            }
+        }
+
+        return newEventKeys;
+    }
+
+    private static bool ApplyMatchState(
         LiveMatch match, int kickbaseStatus, bool isLive, int? homeGoals, int? awayGoals, string? minute, DateTimeOffset now)
     {
         var status = isLive
@@ -284,16 +404,26 @@ public class LiveMatchJob(
             match.FinishedAt = now;
         }
 
+        var changed = match.Status != status || match.HomeGoals != homeGoals || match.AwayGoals != awayGoals || match.Minute != minute;
         match.Status = status;
         match.HomeGoals = homeGoals;
         match.AwayGoals = awayGoals;
         match.Minute = minute;
+        return changed;
     }
 
-    private static bool NeedsPointsRefresh(LiveMatch match, DateTimeOffset now) =>
-        match.PointsUpdatedAt is null
-        || (match.Status != LiveMatchStatus.Finished && now - match.KickoffAt < MaxMatchDuration)
-        || (match.FinishedAt is not null && now - match.FinishedAt < PostMatchRefreshWindow);
+    private static bool NeedsPointsRefresh(LiveMatch match, DateTimeOffset now, bool fullSync)
+    {
+        if (match.PointsUpdatedAt is not null && match.Status != LiveMatchStatus.Finished && now - match.KickoffAt < MaxMatchDuration)
+        {
+            return true;
+        }
+
+        return fullSync
+            && (match.PointsUpdatedAt is null
+                || (match.Status != LiveMatchStatus.Finished && now - match.KickoffAt < MaxMatchDuration)
+                || (match.FinishedAt is not null && now - match.FinishedAt < PostMatchRefreshWindow));
+    }
 
     private async Task<IReadOnlyDictionary<string, string>> LoadTeamNamesAsync(string competitionId, CancellationToken ct)
     {
