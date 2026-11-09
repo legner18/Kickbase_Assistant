@@ -6,130 +6,155 @@
 .sidebar {
   width: var(--sidebar-width);
   flex-shrink: 0;
-  background: var(--surface-card);
+  background: var(--surface-sidebar);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  backdrop-filter: saturate(180%) blur(20px);
   border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
-  padding: 1.1rem 0.9rem;
+  padding: 1.35rem 0.85rem 1rem;
   position: sticky;
   top: 0;
   height: 100vh;
+  overflow-y: auto;
 }
 
 .brand {
   display: flex;
   align-items: center;
-  gap: 0.55rem;
+  gap: 0.65rem;
+  font-family: var(--font-display);
   font-weight: 700;
-  font-size: 0.95rem;
-  padding: 0 0.4rem;
-  margin-bottom: 1.4rem;
+  font-size: 1rem;
+  letter-spacing: -0.02em;
+  padding: 0 0.35rem;
+  margin-bottom: 1.35rem;
   color: var(--text-primary);
 }
 
 .brand-icon {
-  width: 22px;
-  height: 22px;
+  width: 30px;
+  height: 30px;
+  padding: 6px;
   flex-shrink: 0;
-  color: var(--primary);
+  border-radius: 9px;
+  background: linear-gradient(145deg, color-mix(in srgb, var(--primary) 82%, white), var(--primary) 55%, color-mix(in srgb, var(--primary) 70%, #5e2bff));
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.12),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.25);
+  color: #ffffff;
   fill: none;
   stroke: currentColor;
-  stroke-width: 1.8;
+  stroke-width: 2;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
 
 .league-picker {
-  margin-bottom: 1.2rem;
-  padding: 0 0.4rem;
+  margin-bottom: 1.1rem;
+  padding: 0 0.15rem;
 }
 
 .league-picker label {
   display: block;
-  font-size: 0.68rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  font-size: 0.75rem;
+  font-weight: 600;
   color: var(--text-muted);
-  margin-bottom: 0.3rem;
+  padding: 0 0.2rem;
+  margin-bottom: 0.35rem;
 }
 
 .league-picker select {
   width: 100%;
+  font-weight: 500;
 }
 
 .nav {
   display: flex;
   flex-direction: column;
-  gap: 0.15rem;
+  gap: 2px;
   flex: 1;
 }
 
 .nav a {
   display: flex;
   align-items: center;
-  gap: 0.7rem;
-  padding: 0.55rem 0.7rem;
-  border-radius: var(--radius);
+  gap: 0.75rem;
+  padding: 0.5rem 0.7rem;
+  border-radius: 10px;
   color: var(--text-secondary);
-  font-size: 0.87rem;
+  font-size: 0.875rem;
   font-weight: 500;
+  letter-spacing: -0.008em;
   text-decoration: none;
-  transition: background-color 0.12s ease, color 0.12s ease;
+  transition:
+    background-color var(--duration) var(--ease),
+    color var(--duration) var(--ease);
 }
 
-.nav a svg {
-  width: 18px;
-  height: 18px;
+.nav a svg,
+.theme-toggle svg {
+  width: 19px;
+  height: 19px;
   flex-shrink: 0;
   fill: none;
   stroke: currentColor;
-  stroke-width: 1.8;
+  stroke-width: 1.7;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
 
-.nav a:hover {
-  background: var(--surface-hover);
+.nav a svg {
+  opacity: 0.85;
+}
+
+.nav a:hover,
+.theme-toggle:hover {
+  background: var(--fill);
   color: var(--text-primary);
   text-decoration: none;
 }
 
 .nav a.active {
-  background: color-mix(in srgb, var(--primary) 12%, transparent);
+  background: var(--primary-soft);
   color: var(--primary);
+  font-weight: 600;
+}
+
+.nav a.active svg {
+  opacity: 1;
+  stroke-width: 2;
 }
 
 .theme-toggle {
-  margin-top: 0.5rem;
+  margin-top: 0.75rem;
   width: 100%;
   justify-content: flex-start;
+  gap: 0.75rem;
+  padding: 0.5rem 0.7rem;
+  border-radius: 10px;
   background: transparent;
   border-color: transparent;
   color: var(--text-secondary);
 }
 
-.theme-toggle:hover {
-  background: var(--surface-hover);
-}
-
-.theme-toggle svg {
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.8;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
 .content {
   flex: 1;
-  padding: 1.75rem 2.25rem;
-  max-width: 1280px;
+  padding: 2.5rem 3rem 3rem;
+  max-width: 1320px;
   min-width: 0;
+  margin: 0 auto;
 }
 
 .mobile-bar,
 .drawer-backdrop {
   display: none;
+}
+
+@media (max-width: 1200px) {
+  .content {
+    padding: 2rem 2rem 2.5rem;
+  }
 }
 
 @media (max-width: 900px) {
@@ -144,14 +169,26 @@
     position: sticky;
     top: 0;
     z-index: 30;
-    padding: 0.55rem 0.9rem;
-    background: var(--surface-card);
+    padding: 0.55rem 1rem;
+    min-height: 56px;
+    background: var(--surface-bar);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    backdrop-filter: saturate(180%) blur(20px);
     border-bottom: 1px solid var(--border);
   }
 
+  .menu-button {
+    background: transparent;
+    color: var(--text-primary);
+  }
+
+  .menu-button:hover {
+    background: var(--fill);
+  }
+
   .menu-button svg {
-    width: 18px;
-    height: 18px;
+    width: 20px;
+    height: 20px;
     fill: none;
     stroke: currentColor;
     stroke-width: 2;
@@ -161,6 +198,14 @@
   .mobile-brand {
     margin-bottom: 0;
     padding: 0;
+    font-size: 0.95rem;
+  }
+
+  .mobile-brand .brand-icon {
+    width: 26px;
+    height: 26px;
+    padding: 5px;
+    border-radius: 8px;
   }
 
   .mobile-league {
@@ -169,7 +214,11 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    font-size: 0.8rem;
+    padding: 0.25rem 0.65rem;
+    border-radius: var(--radius-pill);
+    background: var(--fill);
+    font-size: 0.78rem;
+    font-weight: 500;
     color: var(--text-secondary);
   }
 
@@ -178,7 +227,8 @@
     position: fixed;
     inset: 0;
     z-index: 40;
-    background: rgba(0, 0, 0, 0.45);
+    background: rgba(0, 0, 0, 0.35);
+    animation: backdrop-in 0.25s var(--ease);
   }
 
   .sidebar {
@@ -190,27 +240,38 @@
     width: min(300px, 85vw);
     height: 100%;
     overflow-y: auto;
+    background: var(--surface-card);
+    border-right: none;
+    border-radius: 0 20px 20px 0;
     visibility: hidden;
     transform: translateX(-100%);
     transition:
-      transform 0.2s ease,
-      visibility 0s linear 0.2s;
+      transform 0.32s var(--ease-out),
+      visibility 0s linear 0.32s;
   }
 
   .sidebar-open {
     visibility: visible;
     transform: none;
     box-shadow: var(--shadow-lg);
-    transition: transform 0.2s ease;
+    transition: transform 0.32s var(--ease-out);
   }
 
   .content {
-    padding: 1rem;
+    padding: 1.25rem 1rem 2rem;
+    margin: 0;
+    max-width: none;
   }
 }
 
 @media (max-width: 640px) {
   .content {
-    padding: 0.9rem 0.75rem 1.5rem;
+    padding: 1rem 0.75rem 2rem;
+  }
+}
+
+@keyframes backdrop-in {
+  from {
+    opacity: 0;
   }
 }

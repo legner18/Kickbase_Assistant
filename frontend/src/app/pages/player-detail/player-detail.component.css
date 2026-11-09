@@ -1,6 +1,20 @@
+.two-col {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.5rem;
+}
+
+@media (max-width: 1000px) {
+  .two-col {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+}
+
 .ownership-league {
-  padding: 0.75rem 1.3rem;
-  border-top: 1px solid var(--border);
+  margin: 0 calc(var(--card-pad-x) * -1);
+  padding: 0.9rem var(--card-pad-x);
+  border-top: 1px solid var(--gridline);
 }
 
 .ownership-league:first-of-type {
@@ -9,7 +23,7 @@
 
 .ownership-league-name {
   font-weight: 600;
-  margin-bottom: 0.4rem;
+  margin-bottom: 0.45rem;
 }
 
 .ownership-chain {
@@ -49,13 +63,16 @@
 }
 
 .back-link {
-  font-size: 0.82rem;
-  display: inline-block;
-  margin-bottom: 0.35rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  margin-bottom: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
 }
 
 .hint {
-  margin: 0.15rem 0 0;
+  margin: 0.2rem 0 0;
 }
 
 .chip-row {
@@ -68,11 +85,13 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.6rem;
-  padding: 0.65rem 1.3rem;
-  border-top: 1px solid var(--border);
+  gap: 0.75rem;
+  margin: 0 calc(var(--card-pad-x) * -1);
+  padding: 0.75rem var(--card-pad-x);
+  border-top: 1px solid var(--gridline);
   text-decoration: none;
   color: inherit;
+  transition: background-color var(--duration) var(--ease);
 }
 
 .compare-row:first-of-type {
@@ -81,6 +100,7 @@
 
 .compare-row:hover {
   background: var(--surface-hover);
+  text-decoration: none;
 }
 
 .compare-name {
@@ -100,10 +120,11 @@
 
 .compare-value {
   color: var(--text-secondary);
-  font-size: 0.88rem;
+  font-size: 0.875rem;
   white-space: nowrap;
   min-width: 5.5rem;
   text-align: right;
+  font-variant-numeric: tabular-nums;
 }
 
 .compare-sub {
@@ -112,13 +133,14 @@
   white-space: nowrap;
   min-width: 5rem;
   text-align: right;
+  font-variant-numeric: tabular-nums;
 }
 
 .next-match-title {
-  margin: 0 0 0.7rem;
+  margin: 0 0 0.75rem;
   font-weight: 600;
 }
 
 .next-match-odds {
-  margin: 0.6rem 0 0;
+  margin: 0.75rem 0 0;
 }

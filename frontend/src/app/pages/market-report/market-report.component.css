@@ -1,5 +1,5 @@
 .hint {
-  margin: 0.15rem 0 0;
+  margin: 0.2rem 0 0;
   max-width: 70ch;
 }
 
@@ -10,18 +10,19 @@
 .market-headline {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 1.25rem;
-  margin-bottom: 1.2rem;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
 }
 
 .market-headline .stat {
-  font-size: 1.35rem;
+  font-size: 1.375rem;
 }
 
 .chart-title {
-  font-size: 0.8rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
   color: var(--text-secondary);
-  margin-bottom: 0.4rem;
+  margin-bottom: 0.5rem;
 }
 
 .chart-wrap {
@@ -29,7 +30,7 @@
   width: 100%;
 }
 
-svg {
+.chart-wrap svg {
   width: 100%;
   height: auto;
   display: block;
@@ -41,7 +42,7 @@ svg {
 }
 
 .baseline {
-  stroke: var(--text-muted);
+  stroke: var(--border-strong);
   stroke-width: 1;
 }
 
@@ -51,7 +52,7 @@ svg {
 }
 
 .bar {
-  transition: opacity 0.1s ease;
+  transition: opacity var(--duration) var(--ease);
 }
 
 .bar-positive {
@@ -63,7 +64,7 @@ svg {
 }
 
 .bar-dimmed {
-  opacity: 0.45;
+  opacity: 0.4;
 }
 
 .hit-area {
@@ -75,11 +76,11 @@ svg {
   position: absolute;
   top: 0;
   transform: translateX(-50%);
-  background: var(--surface-card);
+  background: var(--surface-elevated);
   border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
+  border-radius: 10px;
   box-shadow: var(--shadow);
-  padding: 0.45rem 0.65rem;
+  padding: 0.5rem 0.75rem;
   font-size: 0.8rem;
   white-space: nowrap;
   pointer-events: none;
@@ -93,16 +94,16 @@ svg {
 .mover-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 0 1.25rem;
+  gap: 0 1.5rem;
 }
 
 .mover-row {
   display: flex;
   align-items: baseline;
   gap: 0.6rem;
-  padding: 0.45rem 0;
+  padding: 0.6rem 0;
   border-bottom: 1px solid var(--gridline);
-  font-size: 0.87rem;
+  font-size: 0.875rem;
   cursor: pointer;
 }
 
@@ -111,7 +112,7 @@ svg {
 }
 
 .mover-row:hover .mover-name {
-  text-decoration: underline;
+  color: var(--primary);
 }
 
 .mover-rank {
@@ -123,11 +124,14 @@ svg {
 .mover-name {
   flex: 1;
   min-width: 0;
+  font-weight: 500;
+  transition: color var(--duration) var(--ease);
 }
 
 .mover-name .muted {
   margin-left: 0.3rem;
   font-size: 0.78rem;
+  font-weight: 400;
 }
 
 .mover-row > span:last-child {
@@ -137,16 +141,18 @@ svg {
 }
 
 .top-eleven-meta {
-  margin-bottom: 0.9rem;
+  margin-bottom: 1rem;
 }
 
 .pitch {
   display: flex;
   flex-direction: column;
-  gap: 0.6rem;
-  padding: 1rem;
-  border-radius: var(--radius);
-  background: color-mix(in srgb, var(--series-green) 10%, var(--surface-sunken));
+  gap: 0.75rem;
+  padding: 1.25rem 1rem;
+  border-radius: 14px;
+  background:
+    linear-gradient(180deg, transparent 49.6%, color-mix(in srgb, var(--series-green) 22%, transparent) 49.6%, color-mix(in srgb, var(--series-green) 22%, transparent) 50.4%, transparent 50.4%),
+    color-mix(in srgb, var(--series-green) 9%, var(--surface-sunken));
 }
 
 .pitch-row {
@@ -161,7 +167,16 @@ svg {
   align-items: center;
   gap: 0.1rem;
   min-width: 7.5rem;
-  padding: 0.5rem 0.7rem;
+  padding: 0.55rem 0.75rem;
+  border-radius: 12px;
+  border-color: var(--border);
+  background: var(--surface-card);
+  box-shadow: var(--shadow-sm);
+}
+
+.pitch-player:hover {
+  background: var(--surface-card);
+  box-shadow: var(--shadow);
 }
 
 .pitch-mvp {
@@ -169,8 +184,15 @@ svg {
   box-shadow: 0 0 0 1px var(--status-warning);
 }
 
+.pitch-mvp:hover {
+  box-shadow:
+    0 0 0 1px var(--status-warning),
+    var(--shadow);
+}
+
 .pitch-points {
-  font-size: 1.1rem;
+  font-family: var(--font-display);
+  font-size: 1.125rem;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
@@ -188,6 +210,7 @@ svg {
 @media (max-width: 900px) {
   .market-headline {
     grid-template-columns: repeat(2, 1fr);
+    gap: 1.1rem;
   }
 }
 

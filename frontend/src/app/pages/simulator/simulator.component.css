@@ -1,18 +1,22 @@
 .hint {
-  margin: 0.15rem 0 0;
+  margin: 0.2rem 0 0;
   max-width: 70ch;
 }
 
 .card-grid .stat {
-  font-size: 1.35rem;
+  font-size: 1.375rem;
 }
 
 .verdict {
-  border-left: 4px solid var(--status-good);
+  --verdict-tint: var(--status-good);
+  background:
+    radial-gradient(120% 160% at 0% 0%, color-mix(in srgb, var(--verdict-tint) 11%, transparent), transparent 60%),
+    var(--surface-card);
+  border-color: color-mix(in srgb, var(--verdict-tint) 24%, var(--border));
 }
 
 .verdict-bad {
-  border-left-color: var(--status-critical);
+  --verdict-tint: var(--status-critical);
 }
 
 .verdict p {
@@ -26,14 +30,14 @@
 .two-col {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 1.25rem;
+  gap: 1.5rem;
 }
 
 .ledger-row {
   display: flex;
   justify-content: space-between;
   gap: 1rem;
-  padding: 0.45rem 0;
+  padding: 0.6rem 0;
   border-bottom: 1px solid var(--gridline);
   font-size: 0.9rem;
   font-variant-numeric: tabular-nums;
@@ -42,27 +46,30 @@
 .ledger-total {
   border-bottom: none;
   font-weight: 700;
+  font-size: 0.975rem;
 }
 
 .field {
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
-  margin-bottom: 0.9rem;
+  gap: 0.4rem;
+  margin-bottom: 1rem;
   font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.field select,
+.field input {
+  color: var(--text-primary);
+  font-weight: 400;
 }
 
 .field-hint {
-  margin: -0.4rem 0 0.9rem;
+  margin: -0.5rem 0 1rem;
 }
 
 input[type='number'] {
-  font: inherit;
-  border: 1px solid var(--border);
-  background: var(--surface-card);
-  color: var(--text-primary);
-  border-radius: var(--radius-sm);
-  padding: 0.4rem 0.7rem;
   max-width: 14rem;
 }
 
@@ -71,22 +78,24 @@ input[type='number'] {
 }
 
 .table-title {
-  padding: 1.1rem 1.3rem 0;
+  padding: var(--card-pad-y) var(--card-pad-x) 0;
 }
 
 .player-name-cell {
   cursor: pointer;
+  font-weight: 500;
 }
 
 .player-name-cell:hover {
-  text-decoration: underline;
+  color: var(--primary);
 }
 
 .player-name-cell .badge {
   margin-left: 0.4rem;
 }
 
-.row-selected {
+.row-selected,
+.row-selected:hover {
   background: color-mix(in srgb, var(--primary) 8%, transparent);
 }
 

@@ -1,43 +1,53 @@
 .hint {
-  margin: 0.15rem 0 0;
+  margin: 0.2rem 0 0;
 }
 
 .badge svg {
   width: 8px;
   height: 8px;
+  fill: currentColor;
+}
+
+.badge-good svg {
+  animation: live-pulse 2s var(--ease) infinite;
 }
 
 .last-poll {
-  color: var(--text-secondary);
+  color: var(--text-muted);
   font-size: 0.8rem;
   white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
 
 .live-warning {
-  margin: 0 0 1rem;
-  padding: 0.6rem 0.8rem;
-  border-radius: var(--radius-sm);
-  font-size: 0.88rem;
-  background: color-mix(in srgb, var(--status-warning) 18%, transparent);
+  margin: 0 0 1.25rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius);
+  border: 1px solid color-mix(in srgb, var(--status-warning) 28%, transparent);
+  font-size: 0.875rem;
+  background: color-mix(in srgb, var(--status-warning) 12%, var(--surface-card));
   color: var(--text-primary);
 }
 
 .live-tabs {
-  display: flex;
-  gap: 0.25rem;
-  border-bottom: 1px solid var(--gridline);
-  margin-bottom: 1.25rem;
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 11px;
+  background: var(--fill);
+  margin-bottom: 1.5rem;
 }
 
 .live-tab {
   border: none;
-  border-bottom: 2px solid transparent;
-  border-radius: 0;
+  border-radius: 8px;
   background: transparent;
-  padding: 0.55rem 0.95rem;
-  margin-bottom: -1px;
+  padding: 0.4rem 1.35rem;
+  min-width: 6.5rem;
+  justify-content: center;
   color: var(--text-secondary);
   font-weight: 600;
+  font-size: 0.85rem;
 }
 
 .live-tab:hover {
@@ -51,6 +61,26 @@
 
 .live-tab-active,
 .live-tab-active:hover {
-  color: var(--primary);
-  border-bottom-color: var(--primary);
+  color: var(--text-primary);
+  background: var(--surface-segment);
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.1),
+    0 0 0 0.5px rgba(0, 0, 0, 0.04);
+}
+
+@keyframes live-pulse {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+@media (max-width: 640px) {
+  .live-tabs {
+    display: flex;
+  }
+
+  .live-tab {
+    flex: 1;
+    min-width: 0;
+  }
 }

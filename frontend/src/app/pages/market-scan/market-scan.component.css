@@ -1,5 +1,5 @@
 .hint {
-  margin: 0.15rem 0 0;
+  margin: 0.2rem 0 0;
   max-width: 60ch;
 }
 
@@ -7,9 +7,10 @@
   display: flex;
   justify-content: space-between;
   gap: 1rem;
-  padding: 0.45rem 0;
+  padding: 0.6rem 0;
   border-bottom: 1px solid var(--gridline);
-  font-size: 0.87rem;
+  font-size: 0.875rem;
+  font-variant-numeric: tabular-nums;
 }
 
 .mover-row:last-child {
@@ -19,5 +20,5 @@
 .mini-scores {
   display: flex;
   flex-direction: column;
-  gap: 0.2rem;
+  gap: 0.25rem;
 }

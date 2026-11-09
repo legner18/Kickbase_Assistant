@@ -12,14 +12,14 @@ svg {
 
 .chart-line {
   fill: none;
-  stroke-width: 2;
+  stroke-width: 2.25;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
 
 .chart-area {
   stroke: none;
-  opacity: 0.1;
+  opacity: 0.12;
 }
 
 .chart-dot {
@@ -27,9 +27,11 @@ svg {
   stroke-width: 2;
 }
 
-svg.positive .chart-line,
-svg.positive .chart-dot {
+svg.positive .chart-line {
   stroke: var(--delta-up);
+}
+
+svg.positive .chart-dot {
   fill: var(--delta-up);
 }
 
@@ -37,9 +39,11 @@ svg.positive .chart-area {
   fill: var(--delta-up);
 }
 
-svg.negative .chart-line,
-svg.negative .chart-dot {
+svg.negative .chart-line {
   stroke: var(--delta-down);
+}
+
+svg.negative .chart-dot {
   fill: var(--delta-down);
 }
 
@@ -48,7 +52,7 @@ svg.negative .chart-area {
 }
 
 .crosshair {
-  stroke: var(--border);
+  stroke: var(--border-strong);
   stroke-width: 1;
   stroke-dasharray: 3 3;
 }
@@ -62,11 +66,11 @@ svg.negative .chart-area {
   position: absolute;
   top: 0;
   transform: translateX(-50%);
-  background: var(--surface-card);
+  background: var(--surface-elevated);
   border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
+  border-radius: 10px;
   box-shadow: var(--shadow);
-  padding: 0.45rem 0.65rem;
+  padding: 0.5rem 0.75rem;
   font-size: 0.78rem;
   white-space: nowrap;
   pointer-events: none;
@@ -75,13 +79,15 @@ svg.negative .chart-area {
 
 .tooltip-date {
   color: var(--text-muted);
-  font-size: 0.7rem;
+  font-size: 0.72rem;
 }
 
 .tooltip-value {
   font-weight: 600;
+  font-variant-numeric: tabular-nums;
 }
 
 .tooltip-change {
   font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
 }

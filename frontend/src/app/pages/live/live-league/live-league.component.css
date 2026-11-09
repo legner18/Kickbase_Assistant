@@ -1,21 +1,25 @@
 .league-header {
   display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  margin-bottom: 0.75rem;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.75rem;
+  margin-bottom: 1rem;
 }
 
 .league-header h2 {
   margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
 }
 
 .league-updated {
-  color: var(--text-secondary);
+  color: var(--text-muted);
   font-size: 0.85rem;
 }
 
 .league-updated-stale {
-  color: color-mix(in srgb, var(--status-warning) 70%, var(--text-primary));
+  color: var(--status-warning-ink);
   font-weight: 600;
 }
 
@@ -23,6 +27,7 @@
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
+  font-weight: 500;
 }
 
 .manager-points {
@@ -32,25 +37,23 @@
 
 .selected-row,
 .selected-row:hover {
-  background: color-mix(in srgb, var(--primary) 14%, transparent);
+  background: color-mix(in srgb, var(--primary) 11%, transparent);
   box-shadow: inset 3px 0 0 var(--primary);
 }
 
 .points-warning {
-  margin: 0 1.3rem 0.8rem;
-  padding: 0.55rem 0.75rem;
-  border-radius: var(--radius-sm);
+  margin: 0 var(--card-pad-x) 0.9rem;
+  padding: 0.6rem 0.85rem;
+  border-radius: var(--radius);
   font-size: 0.85rem;
-  background: color-mix(in srgb, var(--status-warning) 18%, transparent);
+  background: color-mix(in srgb, var(--status-warning) 13%, transparent);
   color: var(--text-primary);
 }
 
 .bench-header td {
-  padding-top: 1rem;
-  font-size: 0.72rem;
+  padding-top: 1.1rem;
+  font-size: 0.75rem;
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
   color: var(--text-muted);
 }
 
@@ -69,8 +72,8 @@
 }
 
 .player-opponent {
-  color: var(--text-secondary);
-  font-size: 0.82rem;
+  color: var(--text-muted);
+  font-size: 0.8rem;
 }
 
 .player-points {

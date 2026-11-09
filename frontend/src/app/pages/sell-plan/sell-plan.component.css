@@ -1,11 +1,13 @@
 .hint {
-  margin: 0.15rem 0 0;
+  margin: 0.2rem 0 0;
   max-width: 70ch;
 }
 
 .sell-combo {
-  padding: 0.9rem 1.3rem;
-  border-top: 1px solid var(--border);
+  margin: 0 calc(var(--card-pad-x) * -1);
+  padding: 1rem var(--card-pad-x);
+  border-top: 1px solid var(--gridline);
+  transition: background-color var(--duration) var(--ease);
 }
 
 .sell-combo:first-of-type {
@@ -13,7 +15,7 @@
 }
 
 .sell-combo-best {
-  background: color-mix(in srgb, var(--status-good) 8%, transparent);
+  background: color-mix(in srgb, var(--status-good) 7%, transparent);
 }
 
 .sell-combo-header {
@@ -25,25 +27,23 @@
 
 .player-name-cell {
   cursor: pointer;
+  font-weight: 500;
 }
 
 .player-name-cell:hover {
-  text-decoration: underline;
+  color: var(--primary);
 }
 
 .sell-combo-meta {
   display: flex;
   gap: 1.25rem;
-  margin-top: 0.4rem;
+  margin-top: 0.45rem;
   font-size: 0.85rem;
   color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
 }
 
 @media (max-width: 640px) {
-  .sell-combo {
-    padding: 0.8rem 1rem;
-  }
-
   .sell-combo-header {
     flex-wrap: wrap;
   }

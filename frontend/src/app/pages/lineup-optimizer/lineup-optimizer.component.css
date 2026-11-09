@@ -1,5 +1,5 @@
 .hint {
-  margin: 0.15rem 0 0;
+  margin: 0.2rem 0 0;
   max-width: 70ch;
 }
 
@@ -8,9 +8,11 @@
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  padding: 0.65rem 1.3rem;
-  border-top: 1px solid var(--border);
+  margin: 0 calc(var(--card-pad-x) * -1);
+  padding: 0.75rem var(--card-pad-x);
+  border-top: 1px solid var(--gridline);
   cursor: pointer;
+  transition: background-color var(--duration) var(--ease);
 }
 
 .lineup-row:first-of-type {
@@ -29,7 +31,7 @@
 }
 
 .lineup-meta {
-  color: var(--text-secondary);
+  color: var(--text-muted);
   font-size: 0.82rem;
   flex: 1;
   text-align: right;
@@ -39,4 +41,5 @@
   font-weight: 700;
   min-width: 3.5rem;
   text-align: right;
+  font-variant-numeric: tabular-nums;
 }

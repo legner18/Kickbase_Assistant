@@ -1,23 +1,23 @@
 .hint {
-  margin: 0.15rem 0 0;
+  margin: 0.2rem 0 0;
 }
 
 .alert-card {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 1.1rem;
 }
 
 .alert-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: var(--radius);
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  background: color-mix(in srgb, var(--status-warning) 18%, transparent);
-  color: color-mix(in srgb, var(--status-warning) 70%, black);
+  background: color-mix(in srgb, var(--status-warning) 15%, transparent);
+  color: var(--status-warning-ink);
 }
 
 .alert-icon svg {
@@ -26,8 +26,8 @@
 }
 
 .alert-icon.signal-InjuryNews {
-  background: color-mix(in srgb, var(--status-critical) 16%, transparent);
-  color: var(--status-critical);
+  background: color-mix(in srgb, var(--status-critical) 13%, transparent);
+  color: var(--status-critical-ink);
 }
 
 .alert-main {
@@ -38,17 +38,18 @@
 .alert-title {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 0.5rem;
-  margin-bottom: 0.2rem;
+  margin-bottom: 0.25rem;
 }
 
 .alert-reason {
-  color: var(--text-primary);
-  font-size: 0.87rem;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
 }
 
 .alert-date {
   color: var(--text-muted);
   font-size: 0.78rem;
-  margin-top: 0.2rem;
+  margin-top: 0.3rem;
 }
