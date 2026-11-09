@@ -48,6 +48,7 @@
 
 .axis-label {
   fill: var(--text-muted);
+  font-family: var(--font-display);
   font-size: 11px;
 }
 
@@ -149,7 +150,7 @@
   flex-direction: column;
   gap: 0.75rem;
   padding: 1.25rem 1rem;
-  border-radius: 14px;
+  border-radius: var(--radius-lg);
   background:
     linear-gradient(180deg, transparent 49.6%, color-mix(in srgb, var(--series-green) 22%, transparent) 49.6%, color-mix(in srgb, var(--series-green) 22%, transparent) 50.4%, transparent 50.4%),
     color-mix(in srgb, var(--series-green) 9%, var(--surface-sunken));
@@ -168,7 +169,7 @@
   gap: 0.1rem;
   min-width: 7.5rem;
   padding: 0.55rem 0.75rem;
-  border-radius: 12px;
+  border-radius: var(--radius);
   border-color: var(--border);
   background: var(--surface-card);
   box-shadow: var(--shadow-sm);

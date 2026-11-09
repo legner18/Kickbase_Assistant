@@ -2,11 +2,11 @@ import { Injectable, signal } from '@angular/core';
 
 export type Theme = 'light' | 'dark' | 'system';
 
-const STORAGE_KEY = 'kb-theme';
+const STORAGE_KEY = 'kb-theme-v2';
 
 @Injectable({ providedIn: 'root' })
 export class ThemeService {
-  readonly theme = signal<Theme>((localStorage.getItem(STORAGE_KEY) as Theme | null) ?? 'system');
+  readonly theme = signal<Theme>((localStorage.getItem(STORAGE_KEY) as Theme | null) ?? 'dark');
 
   constructor() {
     this.apply(this.theme());

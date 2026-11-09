@@ -53,7 +53,7 @@ input:focus {
   z-index: 40;
   background: var(--surface-elevated);
   border: 1px solid var(--border);
-  border-radius: 14px;
+  border-radius: var(--radius-lg);
   box-shadow: var(--shadow);
   max-height: 60vh;
   overflow-y: auto;

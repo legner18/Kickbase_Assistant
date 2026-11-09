@@ -7,8 +7,6 @@
   width: var(--sidebar-width);
   flex-shrink: 0;
   background: var(--surface-sidebar);
-  -webkit-backdrop-filter: saturate(180%) blur(20px);
-  backdrop-filter: saturate(180%) blur(20px);
   border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
@@ -24,9 +22,11 @@
   align-items: center;
   gap: 0.65rem;
   font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 1rem;
-  letter-spacing: -0.02em;
+  font-weight: 600;
+  font-size: 1.125rem;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  white-space: nowrap;
   padding: 0 0.35rem;
   margin-bottom: 1.35rem;
   color: var(--text-primary);
@@ -37,12 +37,9 @@
   height: 30px;
   padding: 6px;
   flex-shrink: 0;
-  border-radius: 9px;
-  background: linear-gradient(145deg, color-mix(in srgb, var(--primary) 82%, white), var(--primary) 55%, color-mix(in srgb, var(--primary) 70%, #5e2bff));
-  box-shadow:
-    0 1px 2px rgba(0, 0, 0, 0.12),
-    inset 0 0 0 0.5px rgba(255, 255, 255, 0.25);
-  color: #ffffff;
+  border-radius: 50%;
+  background: var(--primary);
+  color: var(--primary-ink);
   fill: none;
   stroke: currentColor;
   stroke-width: 2;
@@ -57,8 +54,11 @@
 
 .league-picker label {
   display: block;
-  font-size: 0.75rem;
+  font-family: var(--font-display);
+  font-size: 0.8125rem;
   font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
   color: var(--text-muted);
   padding: 0 0.2rem;
   margin-bottom: 0.35rem;
@@ -80,12 +80,14 @@
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  padding: 0.5rem 0.7rem;
-  border-radius: 10px;
+  padding: 0.42rem 0.7rem;
+  border-radius: var(--radius);
   color: var(--text-secondary);
-  font-size: 0.875rem;
+  font-family: var(--font-display);
+  font-size: 1.0625rem;
   font-weight: 500;
-  letter-spacing: -0.008em;
+  letter-spacing: 0.025em;
+  text-transform: uppercase;
   text-decoration: none;
   transition:
     background-color var(--duration) var(--ease),
@@ -117,11 +119,13 @@
 
 .nav a.active {
   background: var(--primary-soft);
-  color: var(--primary);
+  box-shadow: inset 3px 0 0 var(--primary);
+  color: var(--text-primary);
   font-weight: 600;
 }
 
 .nav a.active svg {
+  color: var(--primary);
   opacity: 1;
   stroke-width: 2;
 }
@@ -131,11 +135,13 @@
   width: 100%;
   justify-content: flex-start;
   gap: 0.75rem;
-  padding: 0.5rem 0.7rem;
-  border-radius: 10px;
+  padding: 0.42rem 0.7rem;
+  border-radius: var(--radius);
   background: transparent;
   border-color: transparent;
   color: var(--text-secondary);
+  font-size: 1.0625rem;
+  font-weight: 500;
 }
 
 .content {
@@ -172,8 +178,6 @@
     padding: 0.55rem 1rem;
     min-height: 56px;
     background: var(--surface-bar);
-    -webkit-backdrop-filter: saturate(180%) blur(20px);
-    backdrop-filter: saturate(180%) blur(20px);
     border-bottom: 1px solid var(--border);
   }
 
@@ -198,14 +202,13 @@
   .mobile-brand {
     margin-bottom: 0;
     padding: 0;
-    font-size: 0.95rem;
+    font-size: 1.1875rem;
   }
 
   .mobile-brand .brand-icon {
     width: 26px;
     height: 26px;
     padding: 5px;
-    border-radius: 8px;
   }
 
   .mobile-league {
@@ -242,7 +245,6 @@
     overflow-y: auto;
     background: var(--surface-card);
     border-right: none;
-    border-radius: 0 20px 20px 0;
     visibility: hidden;
     transform: translateX(-100%);
     transition:
