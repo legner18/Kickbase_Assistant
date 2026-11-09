@@ -1,3 +1,4 @@
+using KickbaseAssistant.Domain.Leagues;
 using KickbaseAssistant.Domain.Players;
 using KickbaseAssistant.Infrastructure.Data;
 using Microsoft.AspNetCore.Mvc;
@@ -40,17 +41,33 @@ public class LiveManagersController(AppDbContext dbContext) : ControllerBase
         var matchesById = await dbContext.LiveMatches
             .Where(match => matchIds.Contains(match.Id))
             .ToDictionaryAsync(match => match.Id, ct);
+        var livePlayers = await dbContext.LiveMatchPlayers
+            .Where(player => matchIds.Contains(player.MatchId))
+            .Select(player => new { player.MatchId, player.PlayerId, player.Points })
+            .ToListAsync(ct);
+        var pointsByPlayer = livePlayers.ToDictionary(player => (player.MatchId, player.PlayerId), player => player.Points);
         var now = DateTimeOffset.UtcNow;
+
+        var standings = scores
+            .Select(score => new
+            {
+                Score = score,
+                Points = CalculateMatchdayPoints(score, score.Players
+                    .Where(player => player.InLineup && player.MatchId is not null)
+                    .Select(player => pointsByPlayer.GetValueOrDefault((player.MatchId!, player.PlayerId)))),
+            })
+            .OrderByDescending(standing => standing.Points)
+            .ThenBy(standing => standing.Score.MatchdayRank)
+            .ToList();
 
         return Ok(new
         {
             matchday = matchdayNumber,
             updatedAt = scores.Max(score => score.UpdatedAt),
-            managers = scores
-                .OrderByDescending(score => score.Points)
-                .ThenBy(score => score.MatchdayRank)
-                .Select(score =>
+            managers = standings
+                .Select(standing =>
                 {
+                    var score = standing.Score;
                     var lineupMatches = score.Players
                         .Where(player => player.InLineup)
                         .Select(player => player.MatchId is not null ? matchesById.GetValueOrDefault(player.MatchId) : null)
@@ -60,9 +77,9 @@ public class LiveManagersController(AppDbContext dbContext) : ControllerBase
                         managerId = score.ManagerId,
                         managerName = score.ManagerName,
                         isMe = score.ManagerId == league.OwnUserId,
-                        points = score.Points,
+                        points = standing.Points,
                         pointsCounted = score.PointsCounted,
-                        matchdayRank = score.MatchdayRank,
+                        matchdayRank = standings.Count(other => other.Points > standing.Points) + 1,
                         seasonPoints = score.SeasonPoints,
                         seasonRank = score.SeasonRank,
                         lineupCount = lineupMatches.Count,
@@ -161,10 +178,13 @@ public class LiveManagersController(AppDbContext dbContext) : ControllerBase
             managerName = score.ManagerName,
             isMe = score.ManagerId == league.OwnUserId,
             matchday = score.MatchdayNumber,
-            points = score.Points,
+            points = CalculateMatchdayPoints(score, players.Where(player => player.inLineup).Select(player => player.points ?? 0)),
             pointsCounted = score.PointsCounted,
             updatedAt = score.UpdatedAt,
             players,
         });
     }
+
+    private static int CalculateMatchdayPoints(LiveManagerScore score, IEnumerable<int> lineupPoints) =>
+        score.PointsCounted ? lineupPoints.Sum() : score.Points;
 }
